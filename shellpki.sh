@@ -30,7 +30,7 @@ init() {
     if [ ! -f $PREFIX/files/ca/serial ]; then echo 01 > $PREFIX/ca/serial; fi
 
 $OPENSSL dhparam -out $PREFIX/ca/dh1024.pem 1024
-$OPENSSL genrsa  -out $PREFIX/ca/private.key 1024
+$OPENSSL genrsa  -out $PREFIX/ca/private.key 2048
 
 $OPENSSL req            	    \
     -config $CONFFILE		    \
@@ -61,13 +61,13 @@ create() {
     mkdir $DIR
 
 # generate private key
-$OPENSSL genrsa -out $DIR/$cn.key 1024
+$OPENSSL genrsa -out $DIR/$cn.key 2048
 
 # generate csr req
 $OPENSSL req 		\
     -new -days 1000 	\
     -config $CONFFILE 	\
-    -newkey rsa:1024 	\
+    -newkey rsa:2048 	\
     -nodes 		\
     -keyout $DIR/$cn.key \
     -out $DIR/$cn.csr

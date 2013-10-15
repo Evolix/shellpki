@@ -61,7 +61,13 @@ create() {
     mkdir $DIR
 
 # generate private key
-$OPENSSL genrsa -out $DIR/$cn.key 2048
+echo -n "Should private key be protected by a passphrase? [y/N] "
+read
+if [ "$REPLY" = "y" ] || [ "REPLY" = "Y" ]; then
+    $OPENSSL genrsa -des -out $DIR/$cn.key 2048
+else
+    $OPENSSL genrsa -out $DIR/$cn.key 2048
+fi
 
 # generate csr req
 $OPENSSL req 		\

@@ -71,11 +71,9 @@ fi
 
 # generate csr req
 $OPENSSL req 		\
-    -new -days 1000 	\
-    -config $CONFFILE 	\
-    -newkey rsa:2048 	\
-    -nodes 		\
-    -keyout $DIR/$cn.key \
+    -new            	\
+    -key $DIR/$cn.key   \
+    -config $CONFFILE   \
     -out $DIR/$cn.csr
 
 # ca sign and generate cert

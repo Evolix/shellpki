@@ -64,7 +64,7 @@ create() {
 echo -n "Should private key be protected by a passphrase? [y/N] "
 read
 if [ "$REPLY" = "y" ] || [ "REPLY" = "Y" ]; then
-    $OPENSSL genrsa -des -out $DIR/$cn.key 2048
+    $OPENSSL genrsa -des3 -out $DIR/$cn.key 2048
 else
     $OPENSSL genrsa -out $DIR/$cn.key 2048
 fi

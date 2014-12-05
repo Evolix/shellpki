@@ -96,8 +96,34 @@ chown -R root:www $WWWDIR
 chmod -R u=rwX,g=rwX,o= $WWWDIR
 echo
 
-}
+# generate client configuration
 
+if [ -e $PREFIX/template.conf ]; then
+
+    CA=/etc/openvpn/ssl/ca/cacert.pem
+    CERT=/var/www/htdocs/vpn/ssl/$cn.crt
+    KEY=/var/www/htdocs/vpn/ssl/$cn.key
+    REP=/tmp
+
+    cp $PREFIX/template.conf $REP/$cn.conf
+echo "
+    
+<ca>
+$(cat $CA)
+</ca>
+
+<cert>
+$(cat $CERT)
+</cert>
+
+<key>
+$(cat $KEY)
+</key>
+" >> $REP/$cn.conf
+
+    echo "The configuration file is available in $REP/$cn.conf"
+fi
+}
 
 revoke() {
     echo "Please enter CN (Common Name) to revoke"
@@ -187,7 +213,7 @@ case "$1" in
     revoke)
     	revoke
 	;;
-	
+
     crl)
     	crl
 	;;

@@ -29,7 +29,7 @@ init() {
     if [ ! -f $PREFIX/ca/index.txt ]; then touch $PREFIX/ca/index.txt; fi
     if [ ! -f $PREFIX/files/ca/serial ]; then echo 01 > $PREFIX/ca/serial; fi
 
-$OPENSSL dhparam -out $PREFIX/ca/dh1024.pem 1024
+$OPENSSL dhparam -out $PREFIX/ca/dh2048.pem 2048
 $OPENSSL genrsa  -out $PREFIX/ca/private.key 2048
 
 $OPENSSL req            	    \

@@ -13,7 +13,7 @@ private_key     = $dir/private.key
 RANDFILE        = $dir/.rand
 default_days    = 365
 default_crl_days= 365
-default_md      = md5
+default_md      = sha256
 preserve        = no
 policy          = policy_match
 
@@ -26,7 +26,7 @@ commonName              = supplied
 emailAddress            = supplied
 
 [ req ]
-default_bits            = 1024
+default_bits            = 2048
 distinguished_name      = req_distinguished_name
 
 [ req_distinguished_name ]

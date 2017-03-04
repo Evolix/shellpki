@@ -11,7 +11,7 @@ if [ "`id -u`" != "0" ]; then
     echo "Please become root before running shellpki!"
     echo
     echo "Press return to continue..."
-    read
+    read REPLY
     exit 1
 fi
 
@@ -19,7 +19,7 @@ init() {
     echo "Do you confirm shellpki initialization?"
     echo
     echo "Press return to continue..."
-    read
+    read REPLY
     echo
 
     if [ ! -d $PREFIX/ca ]; then mkdir -p $PREFIX/ca; fi
@@ -46,14 +46,14 @@ create() {
     echo
     echo "Your CN is '$cn'"
     echo "Press return to continue..."
-    read
+    read REPLY
     echo
 
     if [ -e $PREFIX/certs/$cn.crt ]; then
         echo "Please revoke actual $cn cert before creating one"
 	echo
 	echo "Press return to continue..."
-	read
+	read REPLY
 	exit 1
     fi
 
@@ -62,7 +62,7 @@ create() {
 
 # generate private key
 echo -n "Should private key be protected by a passphrase? [y/N] "
-read
+read REPLY
 if [ "$REPLY" = "y" ] || [ "REPLY" = "Y" ]; then
     $OPENSSL genrsa -des3 -out $DIR/$cn.key 2048
 else
@@ -131,7 +131,7 @@ revoke() {
     echo
     echo "CN '$cn' will be revoked"
     echo "Press return to continue..."
-    read
+    read REPLY
     echo
 
 $OPENSSL ca \
@@ -153,7 +153,7 @@ fromcsr() {
         echo "Error in path..."
 	echo
 	echo "Press return to continue..."
-	read
+	read REPLY
 	exit 1
     fi
 
@@ -162,7 +162,7 @@ fromcsr() {
     echo
     echo "Your CN is '$cn'"
     echo "Press return to continue..."
-    read
+    read REPLY
     echo
 
     DIR=$PREFIX/files/req_$cn-$TIMESTAMP

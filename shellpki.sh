@@ -35,6 +35,7 @@ $OPENSSL genrsa  -out $PREFIX/ca/private.key 2048
 $OPENSSL req            	    \
     -config $CONFFILE		    \
     -new -x509 -days 3650      	    \
+    -extensions v3_ca               \
     -keyout $PREFIX/ca/private.key  \
     -out $PREFIX/ca/cacert.pem
 

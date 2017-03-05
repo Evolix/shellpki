@@ -29,6 +29,11 @@ emailAddress            = supplied
 default_bits            = 2048
 distinguished_name      = req_distinguished_name
 
+[ v3_ca ]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer:always
+basicConstraints = CA:true
+
 [ req_distinguished_name ]
 countryName                     = Country Name (2 letter code)
 countryName_default             = FR

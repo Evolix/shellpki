@@ -91,7 +91,8 @@ echo
 echo "copy cert to public certs dir"
 echo
 cp -i $DIR/$cn.crt $PREFIX/certs/
-cp -i $DIR/$cn.{crt,key} $WWWDIR/
+cp -i $DIR/$cn.crt $WWWDIR/
+cp -i $DIR/$cn.key $WWWDIR/
 chown -R root:www $WWWDIR
 chmod -R u=rwX,g=rwX,o= $WWWDIR
 echo

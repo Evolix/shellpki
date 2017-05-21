@@ -29,6 +29,14 @@ init() {
     if [ ! -f $PREFIX/ca/index.txt ]; then touch $PREFIX/ca/index.txt; fi
     if [ ! -f $PREFIX/files/ca/serial ]; then echo 01 > $PREFIX/ca/serial; fi
 
+    if [ ! -e "$CONFFILE" ]; then
+	echo "$CONFFILE is missing" >&2
+	echo >&2
+	echo "Press return to continue..." >&2
+	read REPLY
+	exit 1
+    fi
+
 $OPENSSL dhparam -out $PREFIX/ca/dh2048.pem 2048
 $OPENSSL genrsa  -out $PREFIX/ca/private.key 2048
 

@@ -91,7 +91,7 @@ $OPENSSL ca 		\
     -in $DIR/$cn.csr 	\
     -out $DIR/$cn.crt
 
-# pem cert style 
+# pem cert style
 cp $DIR/$cn.key $DIR/$cn.pem
 cat $DIR/$cn.crt >> $DIR/$cn.pem
 
@@ -117,7 +117,7 @@ if [ -e $PREFIX/template.conf ]; then
 
     cp $PREFIX/template.conf $REP/$cn.conf
 echo "
-    
+
 <ca>
 $(cat $CA)
 </ca>
@@ -146,7 +146,7 @@ revoke() {
 
 $OPENSSL ca \
     -config $CONFFILE \
-    -revoke $PREFIX/certs/$cn.crt	
+    -revoke $PREFIX/certs/$cn.crt
 
 rm -i $PREFIX/certs/$cn.crt
 rm -i $WWWDIR/$cn.crt
@@ -160,7 +160,7 @@ fromcsr() {
     echo
 
     if [ ! -e $path ]; then
-        echo "Error in path..." >&2
+	echo "Error in path..." >&2
 	echo >&2
 	echo "Press return to continue..." >&2
 	read REPLY
@@ -197,7 +197,7 @@ echo
 
 
 crl() {
-    
+
 $OPENSSL ca -gencrl \
     -config $CONFFILE \
     -out crl.pem

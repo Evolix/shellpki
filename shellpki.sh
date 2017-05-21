@@ -8,7 +8,7 @@ WWWDIR=/var/www/htdocs/vpn/ssl
 
 
 if [ "$(id -u)" != "0" ]; then
-    echo "Please become root before running shellpki!" >&2
+    echo "Please become root before running ${0##*/}!" >&2
     echo >&2
     echo "Press return to continue..." >&2
     read REPLY
@@ -16,7 +16,7 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 init() {
-    echo "Do you confirm shellpki initialization?"
+    echo "Do you confirm ${0##*/} initialization?"
     echo
     echo "Press return to continue..."
     read REPLY
@@ -221,7 +221,7 @@ case "$1" in
 	;;
 
     *)
-	echo "Usage: shellpki.sh {init|create|fromcsr|revoke|crl}" >&2
+	echo "Usage: ${0##*/} {init|create|fromcsr|revoke|crl}" >&2
 	exit 1
 	;;
 esac

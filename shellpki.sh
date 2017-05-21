@@ -96,15 +96,17 @@ cp $DIR/$cn.key $DIR/$cn.pem
 cat $DIR/$cn.crt >> $DIR/$cn.pem
 
 # copy to public certs dir
-echo
-echo "copy cert to public certs dir"
-echo
-cp -i $DIR/$cn.crt $PREFIX/certs/
-cp -i $DIR/$cn.crt $WWWDIR/
-cp -i $DIR/$cn.key $WWWDIR/
-chown -R root:www $WWWDIR
-chmod -R u=rwX,g=rwX,o= $WWWDIR
-echo
+if [ -d "$WWWDIR" ]; then
+	echo
+	echo "copy cert to public certs dir"
+	echo
+	cp -i $DIR/$cn.crt $PREFIX/certs/
+	cp -i $DIR/$cn.crt $WWWDIR/
+	cp -i $DIR/$cn.key $WWWDIR/
+	chown -R root:www $WWWDIR
+	chmod -R u=rwX,g=rwX,o= $WWWDIR
+	echo
+fi
 
 # generate client configuration
 
@@ -149,9 +151,10 @@ $OPENSSL ca \
     -revoke $PREFIX/certs/$cn.crt
 
 rm -i $PREFIX/certs/$cn.crt
-rm -i $WWWDIR/$cn.crt
-rm -i $WWWDIR/$cn.key
-
+if [ -d "$WWWDIR" ]; then
+	rm -i $WWWDIR/$cn.crt
+	rm -i $WWWDIR/$cn.key
+fi
 }
 
 fromcsr() {

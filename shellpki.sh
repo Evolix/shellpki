@@ -8,9 +8,9 @@ WWWDIR=/var/www/htdocs/vpn/ssl
 
 
 if [ "$(id -u)" != "0" ]; then
-    echo "Please become root before running shellpki!"
-    echo
-    echo "Press return to continue..."
+    echo "Please become root before running shellpki!" >&2
+    echo >&2
+    echo "Press return to continue..." >&2
     read REPLY
     exit 1
 fi
@@ -152,9 +152,9 @@ fromcsr() {
     echo
 
     if [ ! -e $path ]; then
-        echo "Error in path..."
-	echo
-	echo "Press return to continue..."
+        echo "Error in path..." >&2
+	echo >&2
+	echo "Press return to continue..." >&2
 	read REPLY
 	exit 1
     fi
@@ -221,7 +221,7 @@ case "$1" in
 	;;
 
     *)
-	echo "Usage: shellpki.sh {init|create|fromcsr|revoke|crl}"
+	echo "Usage: shellpki.sh {init|create|fromcsr|revoke|crl}" >&2
 	exit 1
 	;;
 esac

@@ -2,12 +2,12 @@
 
 PREFIX=/etc/openvpn/ssl
 CONFFILE=$PREFIX/openssl.cnf
-OPENSSL=`which openssl`
+OPENSSL=$(which openssl)
 TIMESTAMP=$(/bin/date +"%s")
 WWWDIR=/var/www/htdocs/vpn/ssl
 
 
-if [ "`id -u`" != "0" ]; then
+if [ "$(id -u)" != "0" ]; then
     echo "Please become root before running shellpki!"
     echo
     echo "Press return to continue..."

@@ -72,7 +72,7 @@ create() {
 # generate private key
 echo -n "Should private key be protected by a passphrase? [y/N] "
 read REPLY
-if [ "$REPLY" = "y" ] || [ "REPLY" = "Y" ]; then
+if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
     $OPENSSL genrsa -aes128 -out $DIR/$cn.key 2048
 else
     $OPENSSL genrsa -out $DIR/$cn.key 2048

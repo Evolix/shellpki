@@ -1,0 +1,2 @@
+shellpki.sh usr/bin
+openssl.cnf etc/shellpki

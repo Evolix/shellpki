@@ -1,0 +1,5 @@
+shellpki (0.0~20170805-1) unstable; urgency=low
+
+  * Initial release
+
+ -- Gregory Colpart <reg@debian.org>  Sat, 05 Aug 2017 16:19:11 -0400

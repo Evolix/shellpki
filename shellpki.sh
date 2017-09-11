@@ -112,9 +112,9 @@ fi
 
 if [ -e $PREFIX/template.conf ]; then
 
-    CA=/etc/openvpn/ssl/ca/cacert.pem
-    CERT=/var/www/htdocs/vpn/ssl/$cn.crt
-    KEY=/var/www/htdocs/vpn/ssl/$cn.key
+    CA=$PREFIX/ca/cacert.pem
+    CERT=$WWWDIR/$cn.crt
+    KEY=$WWWDIR/$cn.key
     REP=/tmp
 
     cp $PREFIX/template.conf $REP/$cn.conf

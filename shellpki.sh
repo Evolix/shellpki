@@ -38,7 +38,7 @@ init() {
     fi
 
 $OPENSSL dhparam -out $PREFIX/ca/dh2048.pem 2048
-$OPENSSL genrsa  -out $PREFIX/ca/private.key 2048
+$OPENSSL genrsa  -out $PREFIX/ca/private.key 4096
 
 $OPENSSL req            	    \
     -config $CONFFILE		    \

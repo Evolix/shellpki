@@ -36,3 +36,7 @@ Revoke a certificate :
 ~~~
 shellpki revoke
 ~~~
+
+## License
+
+Shellpki are in GPLv2+, see [LICENSE](LICENSE).

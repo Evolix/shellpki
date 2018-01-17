@@ -1,239 +1,238 @@
 #!/bin/sh
-
-PREFIX=/etc/openvpn/ssl
-CONFFILE=$PREFIX/openssl.cnf
-OPENSSL=$(which openssl)
-TIMESTAMP=$(/bin/date +"%s")
-WWWDIR=/var/www/htdocs/vpn/ssl
-
-
-if [ "$(id -u)" != "0" ]; then
-    echo "Please become root before running ${0##*/}!" >&2
-    echo >&2
-    echo "Press return to continue..." >&2
-    read REPLY
-    exit 1
-fi
+#
+# shellpki is a wrapper around openssl to manage a small PKI
+#
 
 init() {
-    echo "Do you confirm ${0##*/} initialization?"
-    echo
-    echo "Press return to continue..."
-    read REPLY
-    echo
+    umask 0177
 
-    if [ ! -d $PREFIX/ca ]; then mkdir -p $PREFIX/ca; fi
-    if [ ! -d $PREFIX/ca/tmp ]; then mkdir -p $PREFIX/ca/tmp; fi
-    if [ ! -d $PREFIX/certs ]; then mkdir -p $PREFIX/certs; fi
-    if [ ! -d $PREFIX/files ]; then mkdir -p $PREFIX/files; fi
-    if [ ! -f $PREFIX/ca/index.txt ]; then touch $PREFIX/ca/index.txt; fi
-    if [ ! -f $PREFIX/files/ca/serial ]; then echo 01 > $PREFIX/ca/serial; fi
-
-    if [ ! -e "$CONFFILE" ]; then
-	echo "$CONFFILE is missing" >&2
-	echo >&2
-	echo "Press return to continue..." >&2
-	read REPLY
-	exit 1
+    if [ -f "${CADIR}/private.key" ]; then
+        echo "${CADIR}/private.key already exists, do you really want to erase it ?\n"
+        echo "Press return to continue..."
+        read -r REPLY
     fi
 
-$OPENSSL dhparam -out $PREFIX/ca/dh2048.pem 2048
-$OPENSSL genrsa  -out $PREFIX/ca/private.key 4096
+    [ -d "${CADIR}" ] || mkdir -pm 0700 "${CADIR}"
+    [ -d "${CADIR}/certs" ] || mkdir -m 0777 "${CADIR}/certs"
+    [ -d "${CADIR}/tmp" ] || mkdir -m 0700 "${CADIR}/tmp"
+    [ -f "${CADIR}/index.txt" ] || touch "${CADIR}/index.txt"
+    [ -f "${CADIR}/serial" ] || echo "01" > "${CADIR}/serial"
 
-$OPENSSL req            	    \
-    -config $CONFFILE		    \
-    -new -x509 -days 3650      	    \
-    -extensions v3_ca               \
-    -keyout $PREFIX/ca/private.key  \
-    -out $PREFIX/ca/cacert.pem
+    "${OPENSSL}" req                    \
+        -config "${CONFFILE}"           \
+        -newkey rsa:4096 -sha512        \
+        -x509 -days 3650                \
+        -extensions v3_ca               \
+        -keyout "${CADIR}/private.key"  \
+        -out "${CADIR}/cacert.pem"
+}
 
+check_cn() {
+    cn="${1}"
+    if [ -f "${CADIR}/certs/${cn}.crt" ]; then
+        echo "Please revoke actual ${cn} cert before creating one"
+        echo
+        echo "Press return to continue..."
+        read -r REPLY
+        exit 1
+    fi
 }
 
 create() {
+    umask 0137
     echo "Please enter your CN (Common Name)"
-    read cn
+    read -r cn
     echo
-    echo "Your CN is '$cn'"
+    echo "Your CN is '${cn}'"
     echo "Press return to continue..."
-    read REPLY
+    read -r REPLY
     echo
 
-    if [ -e $PREFIX/certs/$cn.crt ]; then
-        echo "Please revoke actual $cn cert before creating one"
-	echo
-	echo "Press return to continue..."
-	read REPLY
-	exit 1
+    # check if CN already exist
+    check_cn "${cn}"
+
+    # generate private key
+    echo "Should private key be protected by a passphrase? [y/N] "
+    read -r REPLY
+    if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
+        "$OPENSSL" genrsa -aes256 -out "${KEYDIR}/${cn}-${TIMESTAMP}.key" 2048
+    else
+        "$OPENSSL" genrsa -out "${KEYDIR}/${cn}-${TIMESTAMP}.key" 2048
     fi
 
-    DIR=$PREFIX/files/$cn-$TIMESTAMP
-    mkdir $DIR
+    # generate csr req
+    "$OPENSSL" req -batch           \
+        -new                        \
+        -key "${KEYDIR}/${cn}-${TIMESTAMP}.key"  \
+        -out "${CSRDIR}/${cn}-${TIMESTAMP}.csr"  \
+        -config /dev/stdin <<EOF
+$(cat "${CONFFILE}")
+commonName_default = ${cn}
+EOF
 
-# generate private key
-echo -n "Should private key be protected by a passphrase? [y/N] "
-read REPLY
-if [ "$REPLY" = "y" ] || [ "$REPLY" = "Y" ]; then
-    $OPENSSL genrsa -aes128 -out $DIR/$cn.key 2048
-else
-    $OPENSSL genrsa -out $DIR/$cn.key 2048
-fi
+    # ca sign and generate cert
+    "${OPENSSL}" ca                         \
+        -config "${CONFFILE}"           \
+        -in "${CSRDIR}/${cn}-${TIMESTAMP}.csr"       \
+        -out "${CADIR}/certs/${cn}.crt"
 
-# generate csr req
-$OPENSSL req 		\
-    -new            	\
-    -key $DIR/$cn.key   \
-    -config $CONFFILE   \
-    -out $DIR/$cn.csr
+    # generate pem format
+    cat "${CADIR}/certs/${cn}.crt" "${CADIR}/cacert.pem" "${KEYDIR}/${cn}-${TIMESTAMP}.key" >> "${PEMDIR}/${cn}-${TIMESTAMP}.pem"
 
-# ca sign and generate cert
-$OPENSSL ca 		\
-    -config $CONFFILE 	\
-    -in $DIR/$cn.csr 	\
-    -out $DIR/$cn.crt
+    # generate pkcs12 format
+    openssl pkcs12 -export -nodes -passout pass: -inkey "${KEYDIR}/${cn}-${TIMESTAMP}.key" -in "${CADIR}/certs/${cn}.crt" -out "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
 
-# pem cert style
-cp $DIR/$cn.key $DIR/$cn.pem
-cat $DIR/$cn.crt >> $DIR/$cn.pem
-
-# copy to public certs dir
-if [ -d "$WWWDIR" ]; then
-	echo
-	echo "copy cert to public certs dir"
-	echo
-	cp -i $DIR/$cn.crt $PREFIX/certs/
-	cp -i $DIR/$cn.crt $WWWDIR/
-	cp -i $DIR/$cn.key $WWWDIR/
-	chown -R root:www $WWWDIR
-	chmod -R u=rwX,g=rwX,o= $WWWDIR
-	echo
-fi
-
-# generate client configuration
-
-if [ -e $PREFIX/template.conf ]; then
-
-    CA=$PREFIX/ca/cacert.pem
-    CERT=$WWWDIR/$cn.crt
-    KEY=$WWWDIR/$cn.key
-    REP=/tmp
-
-    cp $PREFIX/template.conf $REP/$cn.conf
-echo "
-
+    # generate openvpn format
+    if [ -e "${PREFIX}/ovpn.conf" ]; then
+        cat "${PREFIX}/ovpn.conf" > "${OVPNDIR}/${cn}-${TIMESTAMP}.ovpn" <<EOF
 <ca>
-$(cat $CA)
+$(cat "${CADIR}/cacert.pem")
 </ca>
 
 <cert>
-$(cat $CERT)
+$(cat "${CADIR}/certs/${cn}.crt")
 </cert>
 
 <key>
-$(cat $KEY)
+$(cat "${KEYDIR}/${cn}-${TIMESTAMP}.key")
 </key>
-" >> $REP/$cn.conf
-
-    echo "The configuration file is available in $REP/$cn.conf"
-fi
-}
-
-revoke() {
-    echo "Please enter CN (Common Name) to revoke"
-    read cn
-    echo
-    echo "CN '$cn' will be revoked"
-    echo "Press return to continue..."
-    read REPLY
-    echo
-
-$OPENSSL ca \
-    -config $CONFFILE \
-    -revoke $PREFIX/certs/$cn.crt
-
-rm -i $PREFIX/certs/$cn.crt
-if [ -d "$WWWDIR" ]; then
-	rm -i $WWWDIR/$cn.crt
-	rm -i $WWWDIR/$cn.key
-fi
+EOF
+        echo "The configuration file is available in ${OVPNDIR}/${cn}.ovpn"
+    fi
 }
 
 fromcsr() {
     echo "Please enter path for your CSR request file"
-    read path
+    read -r path
     echo
 
-    if [ ! -e $path ]; then
-	echo "Error in path..." >&2
-	echo >&2
-	echo "Press return to continue..." >&2
-	read REPLY
-	exit 1
+    if [ ! -e "${path}" ]; then
+    echo "Error in path..." >&2
+    echo >&2
+    echo "Press return to continue..." >&2
+    read -r REPLY
+    exit 1
     fi
 
-    echo "Please enter the CN (Common Name)"
-    read cn
+    path=$(readlink -f "${path}")
+
+    # get CN from CSR
+    cn=$(openssl req -noout -subject -in "${path}"|grep -Eo "CN=[^/]*"|cut -d'=' -f2)
+
+    # check if CN already exist
+    check_cn "${cn}"
+
+    # copy CSR to CSRDIR
+    cp "$path" "${CSRDIR}/${cn}-${TIMESTAMP}.csr"
+
+    # ca sign and generate cert
+    "${OPENSSL}" ca                             \
+        -config "${CONFFILE}"                   \
+        -in "${CSRDIR}/${cn}-${TIMESTAMP}.csr"  \
+        -out "${CADIR}/certs/${cn}.crt"
+}
+
+revoke() {
+    echo "Please enter CN (Common Name) to revoke"
+    read -r cn
     echo
-    echo "Your CN is '$cn'"
+    echo "CN '${cn}' will be revoked"
     echo "Press return to continue..."
-    read REPLY
+    read -r REPLY
     echo
 
-    DIR=$PREFIX/files/req_$cn-$TIMESTAMP
-    mkdir $DIR
+    [ ! -f "${CADIR}/certs/${cn}.crt" ] && echo "Unknow CN : ${cn}" >&2 && exit 1
 
-    cp $path $DIR
+    echo "Revoke certificate ${CADIR}/certs/${cn}.crt :"
+    "$OPENSSL" ca                       \
+    -config "${CONFFILE}"               \
+    -revoke "${CADIR}/certs/${cn}.crt"  \
+    && rm "${CADIR}/certs/${cn}.crt"
 
-# ca sign and generate cert
-$OPENSSL ca 		\
-    -config $CONFFILE 	\
-    -in $path 	\
-    -out $DIR/$cn.crt
-
-# copy to public certs dir
-echo
-echo "copy cert to public certs dir"
-echo
-cp -i $DIR/$cn.crt $PREFIX/certs/
-echo
-
+    echo "Update CRL :"
+    "$OPENSSL" ca                       \
+    -config "${CONFFILE}"               \
+    -gencrl -out "${CADIR}/crl.pem"
 }
 
-
-crl() {
-
-$OPENSSL ca -gencrl \
-    -config $CONFFILE \
-    -out crl.pem
-
-# TODO : a voir pour l'importation pdts Mozilla, Apple et Microsoft
-#openssl crl2pkcs7 -in crl.pem -certfile /etc/ssl/certs/cacert.pem -out p7.pem
-
+list() {
+    echo "* List of allowed CN :"
+    ls -1 "${CADIR}/certs"
 }
 
-case "$1" in
-    init)
-	init
-	;;
+main() {
+    if [ "$(id -u)" != "0" ]; then
+        echo "Please become root before running ${0##*/}!" >&2
+        echo >&2
+        echo "Press return to continue..." >&2
+        read -r REPLY
+        exit 1
+    fi
 
-    create)
-	create
-	;;
+    # main vars
+    PREFIX="/etc/shellpki"
+    PKIUSER="shellpki"
+    CONFFILE="${PREFIX}/openssl.cnf"
+    CADIR=$(grep -E "^dir" "${CONFFILE}" | cut -d'=' -f2|xargs -n1)
+    OPENSSL=$(command -v openssl)
+    TIMESTAMP=$(/bin/date +"%s")
+    # directories for clients key, csr, crt
+    KEYDIR="${PREFIX}/private"
+    CSRDIR="${PREFIX}/requests"
+    PEMDIR="${PREFIX}/pem"
+    PKCS12DIR="${PREFIX}/pkcs12"
+    OVPNDIR="${PREFIX}/openvpn"
 
-    fromcsr)
-    	fromcsr
-	;;
+    if ! getent passwd "${PKIUSER}" >/dev/null || ! getent group "${PKIUSER}" >/dev/null; then
+        echo "You must create ${PKIUSER} user and group !" >&2
+        exit 1
+    fi
 
-    revoke)
-    	revoke
-	;;
+    if [ ! -e "${CONFFILE}" ]; then
+        echo "${CONFFILE} is missing" >&2
+        >&2
+        echo "Press return to continue..." >&2
+        read -r REPLY
+        exit 1
+    fi
 
-    crl)
-    	crl
-	;;
+    # create needed dir
+    [ -d "${PREFIX}" ] || mkdir -p "${PREFIX}"
+    [ -d "${KEYDIR}" ] || mkdir -m 0750 "${KEYDIR}"
+    [ -d "${CSRDIR}" ] || mkdir -m 0755 "${CSRDIR}"
+    [ -d "${PEMDIR}" ] || mkdir -m 0750 "${PEMDIR}"
+    [ -d "${PKCS12DIR}" ] || mkdir -m 0750 "${PKCS12DIR}"
+    [ -d "${OVPNDIR}" ] || mkdir -m 0750 "${OVPNDIR}"
 
-    *)
-	echo "Usage: ${0##*/} {init|create|fromcsr|revoke|crl}" >&2
-	exit 1
-	;;
-esac
+    # fix right
+    find "${PREFIX}" ! -path "${CADIR}" -exec chown "${PKIUSER}":"${PKIUSER}" {} \; -exec chmod u=rwX,g=rX,o= {} \;
 
+    case "$1" in
+        init)
+            init
+        ;;
+
+        create)
+            create
+        ;;
+
+        fromcsr)
+            fromcsr
+        ;;
+
+        revoke)
+            revoke
+        ;;
+
+        list)
+            list
+        ;;
+
+        *)
+            echo "Usage: ${0} {init|create|fromcsr|revoke|list}" >&2
+            exit 1
+        ;;
+    esac
+}
+
+main "$@"

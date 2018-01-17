@@ -2,13 +2,13 @@
 default_ca      = CA_default
 
 [ CA_default ]
-dir             = /etc/openvpn/ssl/ca
-certs           = /etc/openvpn/ssl/certs
-new_certs_dir   = /etc/openvpn/ssl/ca/tmp
+dir             = /etc/shellpki/ca
+certs           = $dir/certs
+new_certs_dir   = $dir/tmp
 database        = $dir/index.txt
 certificate     = $dir/cacert.pem
 serial          = $dir/serial
-crl             = /etc/openvpn/ssl/crl.pem
+crl             = $dir/crl.pem
 private_key     = $dir/private.key
 RANDFILE        = $dir/.rand
 default_days    = 365
@@ -51,5 +51,3 @@ commonName_max                  = 64
 emailAddress                    = Email Address
 emailAddress_default            = security@evolix.net
 emailAddress_max                = 40
-
-

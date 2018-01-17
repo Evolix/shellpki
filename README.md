@@ -1,24 +1,38 @@
 # shellpki
 
-This script is a wrapper around openssl to manage all the pki stuff
-for openvpn.
+This script is a wrapper around openssl to manage a small PKI.
 
-# Usage
+## Install
 
-First create the directory, put the script in it and the openssl
-configuration file. You may certainly need to edit the configuration.
+~~~
+mkdir /etc/shellpki
+useradd shellpki --system -M --home-dir /etc/shellpki --shell /usr/sbin/nologin
+install -m 0640 openssl.cnf /etc/shellpki/
+install -m 0755 shellpki.sh /usr/local/sbin/shellpki
+~~~
 
-    mkdir -p /etc/openvpn/ssl
-    cp /path/to/shellpki.sh /etc/openvpn/ssl/
-	cp /path/to/openssl.cnf /etc/openvpn/ssl/
-	$EDITOR /etc/openvpn/ssl/openssl.cnf
+## Usage
 
-Then you'll need to initialize the pki.
+Initialize PKI creating CA key and certificate :
 
-    cd /etc/openvpn/ssl
-    sh shellpki.sh init
+~~~
+shellpki init
+~~~
 
-Once it's done, you can create all the certificates you need.
+Create a certificate and key on the server :
 
-    sh shellpki.sh create
+~~~
+shellpki create
+~~~
 
+Create a certificate without key from a CSR :
+
+~~~
+shellpki fromcsr
+~~~
+
+Revoke a certificate :
+
+~~~
+shellpki revoke
+~~~

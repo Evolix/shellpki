@@ -13,28 +13,29 @@ install -m 0755 shellpki.sh /usr/local/sbin/shellpki
 
 ## Usage
 
-Initialize PKI creating CA key and certificate :
-
 ~~~
-shellpki init
-~~~
+Usage: ./shellpki.sh <subcommand> [options] [CommonName]
 
-Create a certificate and key on the server :
+Initialize PKI (create CA key and self-signed cert) :
 
-~~~
-shellpki create
-~~~
+    ./shellpki.sh init
 
-Create a certificate without key from a CSR :
+Create a client cert with key and CSR directly generated on server
+(use -p for set a password on client key) :
 
-~~~
-shellpki fromcsr
-~~~
+    ./shellpki.sh create [-p] <commonName>
 
-Revoke a certificate :
+Create a client cert from a CSR (doesn't need key) :
 
-~~~
-shellpki revoke
+    ./shellpki.sh create -f <path>
+
+Revoke a client cert with is commonName (CN) :
+
+    ./shellpki.sh revoke <commonName>
+
+List all actually valid commonName (CN) :
+
+    ./shellpki.sh list
 ~~~
 
 ## License

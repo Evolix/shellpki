@@ -52,7 +52,7 @@ Revoke a client cert with is commonName (CN) :
 
 List all actually valid commonName (CN) :
 
-    ${0} list
+    ${0} list [-a|v|r]
 
 EOF
 }
@@ -269,7 +269,35 @@ revoke() {
 }
 
 list() {
-    [ -f /etc/shellpki/ca/index.txt ] && grep -Eo "CN\s*=[^,/]*" "${CADIR}/index.txt" | cut -d'=' -f2 | xargs -n1
+    [ -f /etc/shellpki/ca/index.txt ] || exit 0
+
+    list_valid=0
+    list_revoked=1
+
+    while getopts "avr" opt; do
+        case "$opt" in
+            a)
+            list_valid=0
+            list_revoked=0
+            shift;;
+            v)
+            list_valid=0
+            list_revoked=1
+            shift;;
+            r)
+            list_valid=1
+            list_revoked=0
+            shift;;
+        esac
+    done
+
+    [ "${list_valid}" -eq 0 ] && certs=$(grep "^V" "${CADIR}/index.txt")
+
+    [ "${list_revoked}" -eq 0 ] && certs=$(grep "^R" "${CADIR}/index.txt")
+
+    [ "${list_valid}" -eq 0 ] && [ "${list_revoked}" -eq 0 ] && certs=$(cat "${CADIR}/index.txt")
+
+    echo "${certs}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs -n1
 }
 
 main() {

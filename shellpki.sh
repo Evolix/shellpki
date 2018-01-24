@@ -73,7 +73,7 @@ ask_ca_password() {
     trap 'unset CA_PASSWORD' 0
     stty -echo
     printf "Password for CA key : "
-    read CA_PASSWORD
+    read -r CA_PASSWORD
     stty echo
     printf "\n"
     [ "${CA_PASSWORD}" != "" ] || ask_ca_password "${attempt}"
@@ -151,7 +151,7 @@ create() {
             trap 'unset PASSWORD' 0
             stty -echo
             printf "Password for user key : "
-            read PASSWORD
+            read -r PASSWORD
             stty echo
             printf "\n"
         fi

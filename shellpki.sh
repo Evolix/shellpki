@@ -301,13 +301,7 @@ list() {
 }
 
 main() {
-    if [ "$(id -u)" != "0" ]; then
-        echo "Please become root before running ${0##*/}!" >&2
-        echo >&2
-        echo "Press return to continue..." >&2
-        read -r REPLY
-        exit 1
-    fi
+    [ "$(id -u)" -eq 0 ] || error "Please become root before running ${0} !"
 
     # main vars
     PREFIX="/etc/shellpki"
@@ -324,17 +318,10 @@ main() {
     OVPNDIR="${PREFIX}/openvpn"
 
     if ! getent passwd "${PKIUSER}" >/dev/null || ! getent group "${PKIUSER}" >/dev/null; then
-        echo "You must create ${PKIUSER} user and group !" >&2
-        exit 1
+        error "You must create ${PKIUSER} user and group !"
     fi
 
-    if [ ! -e "${CONFFILE}" ]; then
-        echo "${CONFFILE} is missing" >&2
-        >&2
-        echo "Press return to continue..." >&2
-        read -r REPLY
-        exit 1
-    fi
+    [ -e "${CONFFILE}" ] || error "${CONFFILE} is missing"
 
     # create needed dir
     [ -d "${PREFIX}" ] || mkdir -p "${PREFIX}"

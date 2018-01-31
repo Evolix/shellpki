@@ -11,6 +11,11 @@ install -m 0640 openssl.cnf /etc/shellpki/
 install -m 0755 shellpki.sh /usr/local/sbin/shellpki
 ~~~
 
+~~~
+# visudo -f /etc/sudoers.d/shellpki
+%shellpki ALL = (root) /usr/local/sbin/shellpki
+~~~
+
 ## Usage
 
 ~~~

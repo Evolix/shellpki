@@ -2,14 +2,14 @@
 default_ca      = CA_default
 
 [ CA_default ]
-dir             = /etc/shellpki/ca
+dir             = /etc/shellpki
 certs           = $dir/certs
 new_certs_dir   = $dir/tmp
 database        = $dir/index.txt
 certificate     = $dir/cacert.pem
 serial          = $dir/serial
 crl             = $dir/crl.pem
-private_key     = $dir/private.key
+private_key     = $dir/cakey.key
 RANDFILE        = $dir/.rand
 default_days    = 365
 default_crl_days= 365

@@ -227,7 +227,7 @@ EOF
 
         # generate openvpn format
         if [ -e "${CADIR}/ovpn.conf" ]; then
-            cat "${CADIR}/ovpn.conf" > "${OVPNDIR}/${cn}-${TIMESTAMP}.ovpn" <<EOF
+            cat "${CADIR}/ovpn.conf" - > "${OVPNDIR}/${cn}-${TIMESTAMP}.ovpn" <<EOF
 <ca>
 $(cat "${CACERT}")
 </ca>

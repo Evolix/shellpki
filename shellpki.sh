@@ -53,6 +53,10 @@ List all actually valid commonName (CN) :
 
     ${0} list [-a|v|r]
 
+Check expiration date of valid certificates :
+
+    ${0} check
+
 EOF
 }
 
@@ -306,6 +310,27 @@ list() {
     echo "${certs}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs -n1
 }
 
+check() {
+    # default expiration alert
+    # TODO : permit override with parameters
+    min_day=90
+    cur_epoch=$(date -u +'%s')
+
+    for cert in ${CRTDIR}/*; do
+        end_date=$(openssl x509 -noout -enddate -in "${cert}" | cut -d'=' -f2)
+        end_epoch=$(date -ud "${end_date}" +'%s')
+        diff_epoch=$((end_epoch - cur_epoch))
+        diff_day=$((diff_epoch/60/60/24))
+        if [ "${diff_day}" -lt "${min_day}" ]; then
+            if [ "${diff_day}" -le 0 ]; then
+                echo "${cert} has expired"
+            else
+                echo "${cert} expire in ${diff_day} days"
+            fi
+        fi
+    done
+}
+
 main() {
     [ "$(id -u)" -eq 0 ] || error "Please become root before running ${0} !"
 
@@ -361,6 +386,11 @@ main() {
         list)
             shift
             list "$@"
+        ;;
+
+        check)
+            shift
+            check "$@"
         ;;
 
         *)

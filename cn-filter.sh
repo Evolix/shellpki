@@ -9,18 +9,16 @@
 # client-connect <path-to-cn-filter>/cn-filter.sh
 #
 
-set -eu
+set -u
 
-DATE="$(date +'%b %d %H:%M:%S')"
-LOG_FILE="/var/log/openvpn/auth.log"
 AUTH_FILE="/etc/openvpn/authorized_cns"
 
 grep -qE "^${common_name}$" "${AUTH_FILE}"
 if [ "$?" -eq 0 ]; then
-        echo "${DATE} - Accepted login for ${common_name} from ${trusted_ip} port ${trusted_port}" >> "${LOG_FILE}"
+        logger -i -t openvpn-cn-filter -p auth.info "Accepted login for ${common_name} from ${trusted_ip} port ${trusted_port}"
         exit 0
 else
-        echo "${DATE} - Failed login for ${common_name} from ${trusted_ip} port ${trusted_port}" >> "${LOG_FILE}"
+        logger -i -t openvpn-cn-filter -p auth.notice "Failed login for ${common_name} from ${trusted_ip} port ${trusted_port}"
 fi
 
 exit 1

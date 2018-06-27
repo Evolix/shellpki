@@ -1,0 +1,14 @@
+[Unit]
+Description=Shellpki OCSP responder
+After=network.target
+
+[Service]
+User=shellpki
+Group=shellpki
+Type=simple
+ExecStart=/usr/local/sbin/shellpki ocsp ocsp.example.com:8888
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

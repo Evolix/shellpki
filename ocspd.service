@@ -9,6 +9,7 @@ Type=simple
 ExecStart=/usr/local/sbin/shellpki ocsp ocsp.example.com:8888
 KillMode=process
 Restart=always
+RestartSec=2s
 
 [Install]
 WantedBy=multi-user.target

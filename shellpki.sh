@@ -368,6 +368,7 @@ main() {
     CAKEY=$(grep -E "^private_key" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     CACERT=$(grep -E "^certificate" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     CRTDIR=$(grep -E "^certs" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
+    TMPDIR=$(grep -E "^new_certs_dir" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     INDEX=$(grep -E "^database" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     SERIAL=$(grep -E "^serial" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     CRL=$(grep -E "^crl" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
@@ -387,7 +388,7 @@ main() {
 
     [ -e "${CONFFILE}" ] || error "${CONFFILE} is missing"
 
-    mkdir -p "${CADIR}" "${CRTDIR}" "${KEYDIR}" "${CSRDIR}" "${PKCS12DIR}" "${OVPNDIR}"
+    mkdir -p "${CADIR}" "${CRTDIR}" "${KEYDIR}" "${CSRDIR}" "${PKCS12DIR}" "${OVPNDIR}" "${TMPDIR}"
 
     command=${1:-help}
 
@@ -425,7 +426,7 @@ main() {
 
     # fix right
     chown -R "${PKIUSER}":"${PKIUSER}" "${CADIR}"
-    chmod 750 "${CADIR}" "${CRTDIR}" "${KEYDIR}" "${CSRDIR}" "${PKCS12DIR}" "${OVPNDIR}"
+    chmod 750 "${CADIR}" "${CRTDIR}" "${KEYDIR}" "${CSRDIR}" "${PKCS12DIR}" "${OVPNDIR}" "${TMPDIR}"
     chmod 600 "${INDEX}"* "${SERIAL}"* "${CAKEY}" "${CRL}"
     chmod 640 "${CACERT}"
 }

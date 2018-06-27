@@ -8,24 +8,48 @@ set -eu
 init() {
     umask 0177
 
-    if [ -f "${CAKEY}" ]; then
-        echo "${CAKEY} already exists, do you really want to erase it ?\n"
-        echo "Press return to continue..."
-        read -r REPLY
-    fi
-
     [ -d "${CADIR}" ] || mkdir -m 0750 "${CADIR}"
     [ -d "${CRTDIR}" ] || mkdir -m 0750 "${CRTDIR}"
     [ -f "${INDEX}" ] || touch "${INDEX}"
+    [ -f "${CRL}" ] || touch "${CRL}"
     [ -f "${SERIAL}" ] || echo "01" > "${SERIAL}"
 
-    "${OPENSSL}" req                    \
-        -config "${CONFFILE}"           \
-        -newkey rsa:4096 -sha512        \
-        -x509 -days 3650                \
-        -extensions v3_ca               \
-        -keyout "${CAKEY}"  \
-        -out "${CACERT}"
+    cn="${1:-}"
+    [ -z "${cn}" ] && usage >&2 && exit 1
+
+    if [ -f "${CAKEY}" ]; then
+        printf "%s already exists, do you really want to erase it ? [y/N] " ${CAKEY}
+        read -r REPLY
+        resp=$(echo "${REPLY}"|tr 'Y' 'y')
+        [ "${resp}" = "y" ] && rm "${CAKEY}" "${CACERT}"
+    fi
+
+    [ ! -f "${CAKEY}" ] && "$OPENSSL"   \
+        genrsa                          \
+        -out "${CAKEY}"                 \
+        -aes256 4096 >/dev/null 2>&1
+
+    if [ -f "${CACERT}" ]; then
+        printf "%s already exists, do you really want to erase it ? [y/N] " ${CACERT}
+        read -r REPLY
+        resp=$(echo "${REPLY}"|tr 'Y' 'y')
+        [ "${resp}" = "y" ] && rm "${CACERT}"
+    fi
+
+    [ ! -f "${CACERT}" ] && ask_ca_password 0
+
+    [ ! -f "${CACERT}" ] && CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}"   \
+         req                                                            \
+        -batch -sha512                                                  \
+        -x509 -days 3650                                                \
+        -extensions v3_ca                                               \
+        -key "${CAKEY}"                                                 \
+        -out "${CACERT}"                                                \
+        -passin env:CA_PASSWORD                                         \
+        -config /dev/stdin <<EOF
+$(cat "${CONFFILE}")
+commonName_default = ${cn}
+EOF
 }
 
 usage() {
@@ -34,7 +58,7 @@ Usage: ${0} <subcommand> [options] [CommonName]
 
 Initialize PKI (create CA key and self-signed cert) :
 
-    ${0} init
+    ${0} init <commonName_for_CA>
 
 Create a client cert with key and CSR directly generated on server
 (use -p for set a password on client key) :
@@ -370,7 +394,7 @@ main() {
     case "${command}" in
         init)
             shift
-            init
+            init "$@"
         ;;
 
         create)

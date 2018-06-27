@@ -87,7 +87,7 @@ EOF
         -passin env:CA_PASSWORD                                         \
         -config "${CONFFILE}"
 
-    exec "${OPENSSL}" ocsp -index "${INDEX}" -port "${port}" -rsigner "${OCSPCERT}" -rkey "${OCSPKEY}" -CA "${CACERT}" -text
+    exec "${OPENSSL}" ocsp -ignore_err -index "${INDEX}" -port "${port}" -rsigner "${OCSPCERT}" -rkey "${OCSPKEY}" -CA "${CACERT}" -text
 }
 
 usage() {

@@ -21,7 +21,7 @@ init() {
         printf "%s already exists, do you really want to erase it ? [y/N] " ${CAKEY}
         read -r REPLY
         resp=$(echo "${REPLY}"|tr 'Y' 'y')
-        [ "${resp}" = "y" ] && rm "${CAKEY}" "${CACERT}"
+        [ "${resp}" = "y" ] && rm -f "${CAKEY}" "${CACERT}"
     fi
 
     [ ! -f "${CAKEY}" ] && "$OPENSSL"   \

@@ -398,12 +398,12 @@ check() {
 }
 
 main() {
-    [ "$(id -u)" -eq 0 ] || error "Please become root before running ${0} !"
-
     # default config
     # TODO : override with /etc/default/shellpki
     CONFFILE="/etc/shellpki/openssl.cnf"
     PKIUSER="shellpki"
+
+    [ "${USER}" != "root" ] || [ "${USER}" != "${PKIUSER}" ] || error "Please become root before running ${0} !"
 
     # retrieve CA path from config file
     CADIR=$(grep -E "^dir" "${CONFFILE}" | cut -d'=' -f2|xargs -n1)

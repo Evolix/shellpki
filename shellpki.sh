@@ -52,6 +52,44 @@ commonName_default = ${cn}
 EOF
 }
 
+ocsp() {
+    umask 0177
+
+    ocsp_uri="${1:-}"
+    [ -z "${ocsp_uri}" ] && usage >&2 && exit 1
+
+    url=$(echo "${ocsp_uri}"|cut -d':' -f1)
+    port=$(echo "${ocsp_uri}"|cut -d':' -f2)
+
+    [ ! -f "${OCSPKEY}" ] && "$OPENSSL"   \
+        genrsa                            \
+        -out "${OCSPKEY}"                 \
+        2048 >/dev/null 2>&1
+
+    "$OPENSSL" req                              \
+        -batch -new                             \
+        -key "${OCSPKEY}"			\
+        -out "${CSRDIR}/ocsp.csr"               \
+        -config /dev/stdin <<EOF
+$(cat "${CONFFILE}")
+commonName_default = ${url}
+[ usr_cert ]
+authorityInfoAccess = OCSP;URI:http://${ocsp_uri}
+EOF
+
+    [ ! -f "${OCSPCERT}" ] && ask_ca_password 0
+
+    [ ! -f "${OCSPCERT}" ] && CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}"	\
+        ca								\
+        -extensions v3_ocsp                                             \
+        -in "${CSRDIR}/ocsp.csr"					\
+        -out "${OCSPCERT}"                                              \
+        -passin env:CA_PASSWORD                                         \
+        -config "${CONFFILE}"
+
+    "${OPENSSL}" ocsp -index "${INDEX}" -port "${port}" -rsigner "${OCSPCERT}" -rkey "${OCSPKEY}" -CA "${CACERT}" -text
+}
+
 usage() {
     cat <<EOF
 Usage: ${0} <subcommand> [options] [CommonName]
@@ -59,6 +97,10 @@ Usage: ${0} <subcommand> [options] [CommonName]
 Initialize PKI (create CA key and self-signed cert) :
 
     ${0} init <commonName_for_CA>
+
+Run OCSPD server :
+
+    ${0} ocsp <ocsp_uri:ocsp_port>
 
 Create a client cert with key and CSR directly generated on server
 (use -p for set a password on client key) :
@@ -367,6 +409,8 @@ main() {
     CADIR=$(grep -E "^dir" "${CONFFILE}" | cut -d'=' -f2|xargs -n1)
     CAKEY=$(grep -E "^private_key" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     CACERT=$(grep -E "^certificate" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
+    OCSPKEY="${CADIR}/ocsp.key"
+    OCSPCERT="${CADIR}/ocsp.pem"
     CRTDIR=$(grep -E "^certs" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     TMPDIR=$(grep -E "^new_certs_dir" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
     INDEX=$(grep -E "^database" "${CONFFILE}" | cut -d'=' -f2|xargs -n1|sed "s~\$dir~${CADIR}~")
@@ -396,6 +440,11 @@ main() {
         init)
             shift
             init "$@"
+        ;;
+
+        ocsp)
+            shift
+            ocsp "$@"
         ;;
 
         create)

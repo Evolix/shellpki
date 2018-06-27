@@ -34,6 +34,11 @@ subjectKeyIdentifier=hash
 authorityKeyIdentifier=keyid:always,issuer:always
 basicConstraints = CA:true
 
+[ v3_ocsp ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = OCSPSigning
+
 [ req_distinguished_name ]
 countryName                     = Country Name (2 letter code)
 countryName_default             = FR

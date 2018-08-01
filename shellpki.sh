@@ -39,7 +39,7 @@ init() {
     [ ! -f "${CACERT}" ] && ask_ca_password 0
 
     [ ! -f "${CACERT}" ] && CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}"   \
-         req                                                            \
+         req -new                                                       \
         -batch -sha512                                                  \
         -x509 -days 3650                                                \
         -extensions v3_ca                                               \

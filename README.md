@@ -4,16 +4,34 @@ This script is a wrapper around openssl to manage a small PKI.
 
 ## Install
 
+### Debian
+
 ~~~
-mkdir /etc/shellpki
 useradd shellpki --system -M --home-dir /etc/shellpki --shell /usr/sbin/nologin
+mkdir /etc/shellpki
 install -m 0640 openssl.cnf /etc/shellpki/
 install -m 0755 shellpki.sh /usr/local/sbin/shellpki
+chown -R shellpki: /etc/shellpki
 ~~~
 
 ~~~
 # visudo -f /etc/sudoers.d/shellpki
 %shellpki ALL = (root) /usr/local/sbin/shellpki
+~~~
+
+### OpenBSD
+
+~~~
+useradd -r 1..1000 -d /etc/shellpki -s /sbin/nologin _shellpki
+mkdir /etc/shellpki
+install -m 0640 openssl.cnf /etc/shellpki/
+install -m 0755 shellpki.sh /usr/local/sbin/shellpki
+chown -R _shellpki:_shellpki /etc/shellpki
+~~~
+
+~~~
+# visudo -f /etc/sudoers
+%_shellpki ALL = (root) /usr/local/sbin/shellpki
 ~~~
 
 ## Usage

@@ -34,6 +34,24 @@ chown -R _shellpki:_shellpki /etc/shellpki
 %_shellpki ALL = (root) /usr/local/sbin/shellpki
 ~~~
 
+## OpenVPN
+
+If you want auto-generation of OpenVPN config file in /etc/shellpki/openvpn, you need to create a template file in /etc/shellpki/ovpn.conf, eg. :
+
+~~~
+client
+dev tun
+tls-client
+proto udp
+
+remote ovpn.example.com 1194
+
+persist-key
+persist-tun
+
+cipher AES-256-CBC
+~~~
+
 ## Usage
 
 ~~~

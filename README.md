@@ -41,7 +41,7 @@ Usage: ./shellpki.sh <subcommand> [options] [CommonName]
 
 Initialize PKI (create CA key and self-signed cert) :
 
-    ./shellpki.sh init
+    ./shellpki.sh init <commonName_for_CA>
 
 Create a client cert with key and CSR directly generated on server
 (use -p for set a password on client key) :

@@ -402,6 +402,7 @@ main() {
     # TODO : override with /etc/default/shellpki
     CONFFILE="/etc/shellpki/openssl.cnf"
     PKIUSER="shellpki"
+    [ "$(uname)" == "OpenBSD" ] && PKIUSER="_shellpki"
 
     [ "${USER}" != "root" ] || [ "${USER}" != "${PKIUSER}" ] || error "Please become root before running ${0} !"
 

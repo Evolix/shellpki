@@ -18,7 +18,7 @@ init() {
     [ -z "${cn}" ] && usage >&2 && exit 1
 
     if [ -f "${CAKEY}" ]; then
-        printf "%s already exists, do you really want to erase it ? [y/N] " ${CAKEY}
+        printf "%s already exists, do you really want to erase it ? [y/N] " "${CAKEY}"
         read -r REPLY
         resp=$(echo "${REPLY}"|tr 'Y' 'y')
         [ "${resp}" = "y" ] && rm -f "${CAKEY}" "${CACERT}"
@@ -30,7 +30,7 @@ init() {
         -aes256 4096 >/dev/null 2>&1
 
     if [ -f "${CACERT}" ]; then
-        printf "%s already exists, do you really want to erase it ? [y/N] " ${CACERT}
+        printf "%s already exists, do you really want to erase it ? [y/N] " "${CACERT}"
         read -r REPLY
         resp=$(echo "${REPLY}"|tr 'Y' 'y')
         [ "${resp}" = "y" ] && rm "${CACERT}"
@@ -402,7 +402,7 @@ main() {
     # TODO : override with /etc/default/shellpki
     CONFFILE="/etc/shellpki/openssl.cnf"
     PKIUSER="shellpki"
-    [ "$(uname)" == "OpenBSD" ] && PKIUSER="_shellpki"
+    [ "$(uname)" = "OpenBSD" ] && PKIUSER="_shellpki"
 
     [ "${USER}" != "root" ] || [ "${USER}" != "${PKIUSER}" ] || error "Please become root before running ${0} !"
 

@@ -81,4 +81,4 @@ List all actually valid commonName (CN) :
 
 ## License
 
-Shellpki are in GPLv2+, see [LICENSE](LICENSE).
+Shellpki is an [Evolix](https://evolix.com) project and is licensed under MIT, see the [LICENSE](LICENSE) file for details.

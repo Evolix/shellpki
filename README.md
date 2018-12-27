@@ -1,6 +1,7 @@
-# shellpki
+# ShellPKI
 
-This script is a wrapper around openssl to manage a small PKI.
+This script is a wrapper around OpenSSL to manage a small
+[PKI](https://en.wikipedia.org/wiki/Public_key_infrastructure).
 
 ## Install
 
@@ -36,7 +37,9 @@ chown -R _shellpki:_shellpki /etc/shellpki
 
 ## OpenVPN
 
-If you want auto-generation of OpenVPN config file in /etc/shellpki/openvpn, you need to create a template file in /etc/shellpki/ovpn.conf, eg. :
+If you want auto-generation of the OpenVPN config file in
+/etc/shellpki/openvpn, you need to create a template file in
+/etc/shellpki/ovpn.conf, eg. :
 
 ~~~
 client
@@ -56,29 +59,40 @@ cipher AES-256-CBC
 
 ~~~
 Usage: ./shellpki.sh <subcommand> [options] [CommonName]
+~~~
 
 Initialize PKI (create CA key and self-signed cert) :
 
-    ./shellpki.sh init <commonName_for_CA>
+~~~
+   ./shellpki.sh init <commonName_for_CA>
+~~~
 
 Create a client cert with key and CSR directly generated on server
 (use -p for set a password on client key) :
 
+~~~
     ./shellpki.sh create [-p] <commonName>
+~~~
 
 Create a client cert from a CSR (doesn't need key) :
 
+~~~
     ./shellpki.sh create -f <path>
+~~~
 
 Revoke a client cert with is commonName (CN) :
 
+~~~
     ./shellpki.sh revoke <commonName>
+~~~
 
 List all actually valid commonName (CN) :
 
+~~~
     ./shellpki.sh list
 ~~~
 
 ## License
 
-Shellpki is an [Evolix](https://evolix.com) project and is licensed under MIT, see the [LICENSE](LICENSE) file for details.
+ShellPKI is an [Evolix](https://evolix.com) project and is licensed
+under the [MIT license](LICENSE).

@@ -13,16 +13,29 @@ Vagrant.configure('2') do |config|
 
   $deps = <<SCRIPT
 mkdir -p /etc/shellpki
-id shellpki 2>&1 >/dev/null || useradd shellpki --system -M --home-dir /etc/shellpki --shell /usr/sbin/nologin
+if [ "$(uname)" = "Linux" ]; then
+    id shellpki 2>&1 >/dev/null || useradd shellpki --system -M --home-dir /etc/shellpki --shell /usr/sbin/nologin
+fi
+if [ "$(uname)" = "OpenBSD" ]; then
+    id _shellpki 2>&1 >/dev/null || useradd -r 1..1000 -d /etc/shellpki -s /sbin/nologin _shellpki
+fi
 ln -sf /vagrant/openssl.cnf /etc/shellpki/
 ln -sf /vagrant/shellpki.sh /usr/local/sbin/shellpki
 SCRIPT
 
-  config.vm.define :shellpki do |node|
-    node.vm.hostname = "shellpki"
-    node.vm.box = "debian/stretch64"
+  nodes = [
+    { :name => "debian", :box => "debian/stretch64" },
+    { :name => "openbsd", :box => "generic/openbsd6" }
+  ]
 
-    node.vm.provision "deps", type: "shell", :inline => $deps
+  nodes.each do |i|
+    config.vm.define "#{i[:name]}" do |node|
+      node.vm.hostname = "shellpki-#{i[:name]}"
+      node.vm.box = "#{i[:box]}"
+
+      config.vm.provision "deps", type: "shell", :inline => $deps
+    end
   end
+
 
 end

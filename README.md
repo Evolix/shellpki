@@ -11,7 +11,7 @@ This script is a wrapper around OpenSSL to manage a small
 useradd shellpki --system -M --home-dir /etc/shellpki --shell /usr/sbin/nologin
 mkdir /etc/shellpki
 install -m 0640 openssl.cnf /etc/shellpki/
-install -m 0755 shellpki.sh /usr/local/sbin/shellpki
+install -m 0755 shellpki /usr/local/sbin/shellpki
 chown -R shellpki: /etc/shellpki
 ~~~
 
@@ -26,7 +26,7 @@ chown -R shellpki: /etc/shellpki
 useradd -r 1..1000 -d /etc/shellpki -s /sbin/nologin _shellpki
 mkdir /etc/shellpki
 install -m 0640 openssl.cnf /etc/shellpki/
-install -m 0755 shellpki.sh /usr/local/sbin/shellpki
+install -m 0755 shellpki /usr/local/sbin/shellpki
 chown -R _shellpki:_shellpki /etc/shellpki
 ~~~
 
@@ -58,38 +58,38 @@ cipher AES-256-CBC
 ## Usage
 
 ~~~
-Usage: ./shellpki.sh <subcommand> [options] [CommonName]
+Usage: ./shellpki <subcommand> [options] [CommonName]
 ~~~
 
 Initialize PKI (create CA key and self-signed cert) :
 
 ~~~
-   ./shellpki.sh init <commonName_for_CA>
+   ./shellpki init <commonName_for_CA>
 ~~~
 
 Create a client cert with key and CSR directly generated on server
 (use -p for set a password on client key) :
 
 ~~~
-    ./shellpki.sh create [-p] <commonName>
+    ./shellpki create [-p] <commonName>
 ~~~
 
 Create a client cert from a CSR (doesn't need key) :
 
 ~~~
-    ./shellpki.sh create -f <path>
+    ./shellpki create -f <path>
 ~~~
 
 Revoke a client cert with is commonName (CN) :
 
 ~~~
-    ./shellpki.sh revoke <commonName>
+    ./shellpki revoke <commonName>
 ~~~
 
 List all actually valid commonName (CN) :
 
 ~~~
-    ./shellpki.sh list
+    ./shellpki list
 ~~~
 
 ## License

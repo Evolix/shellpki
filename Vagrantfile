@@ -20,7 +20,7 @@ if [ "$(uname)" = "OpenBSD" ]; then
     id _shellpki 2>&1 >/dev/null || useradd -r 1..1000 -d /etc/shellpki -s /sbin/nologin _shellpki
 fi
 ln -sf /vagrant/openssl.cnf /etc/shellpki/
-ln -sf /vagrant/shellpki.sh /usr/local/sbin/shellpki
+ln -sf /vagrant/shellpki /usr/local/sbin/shellpki
 SCRIPT
 
   nodes = [

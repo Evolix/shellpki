@@ -3,7 +3,7 @@
 # shellpki is a wrapper around openssl to manage a small PKI
 #
 
-set -eu
+set -e
 
 init() {
     umask 0177
@@ -157,24 +157,29 @@ create() {
     from_csr=1
     with_pass=1
 
-    while getopts ":f:p" opt; do
-        case "$opt" in
-            f)
-            [ ! -f "${OPTARG}" ] && error "${OPTARG} must be a file"
-            from_csr=0
-            csr_file=$(readlink -f "${OPTARG}")
-            shift 2;;
-            p)
-            with_pass=0
-            shift;;
-            :)
-            error "Option -$OPTARG requires an argument."
+    while :; do
+        case "${1}" in
+            -f|--file)
+                shift
+                [ ! -f "${1}" ] && error "${1} must be a file"
+                from_csr=0
+                csr_file=$(readlink -f "${1}")
+                shift;;
+            -p|--password)
+                with_pass=0
+                shift;;
+            --)
+                shift
+                break;;
+            -?*)
+                warning "unknow option ${1} (ignored)"
+                shift;;
+            *)
+                break;;
         esac
     done
 
     cn="${1:-}"
-
-    [ "${cn}" = "--" ] && shift
 
     if [ "${from_csr}" -eq 0 ]; then
         [ "${with_pass}" -eq 0 ] && warning "Warning: -p made nothing with -f"
@@ -350,20 +355,28 @@ list() {
     list_valid=0
     list_revoked=1
 
-    while getopts "avr" opt; do
-        case "$opt" in
-            a)
-            list_valid=0
-            list_revoked=0
-            shift;;
-            v)
-            list_valid=0
-            list_revoked=1
-            shift;;
-            r)
-            list_valid=1
-            list_revoked=0
-            shift;;
+    while :; do
+        case "${1}" in
+            -a|--all)
+                list_valid=0
+                list_revoked=0
+                shift;;
+            -v|--valid)
+                list_valid=0
+                list_revoked=1
+                shift;;
+            -r|--revoked)
+                list_valid=1
+                list_revoked=0
+                shift;;
+            --)
+                shift
+                break;;
+            -?*)
+                warning "unknow option ${1} (ignored)"
+                shift;;
+            *)
+                break;;
         esac
     done
 

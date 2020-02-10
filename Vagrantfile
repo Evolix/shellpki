@@ -1,8 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-Vagrant::DEFAULT_SERVER_URL.replace('https://vagrantcloud.com')
-
 # Load ~/.VagrantFile if exist, permit local config provider
 vagrantfile = File.join("#{Dir.home}", '.VagrantFile')
 load File.expand_path(vagrantfile) if File.exists?(vagrantfile)

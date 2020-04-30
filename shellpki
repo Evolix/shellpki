@@ -222,6 +222,9 @@ create() {
         # check if CN already exist
         [ -f "${CRTDIR}/${cn}.crt" ] && error "${cn} already used !"
 
+        # ask for CA passphrase
+        ask_ca_password 0
+
         # ask for client key passphrase
         if [ "${with_pass}" -eq 0 ]; then
             trap 'unset PASSWORD' 0
@@ -231,9 +234,6 @@ create() {
             stty echo
             printf "\n"
         fi
-
-        # ask for CA passphrase
-        ask_ca_password 0
 
         # generate private key
         if [ "${with_pass}" -eq 0 ]; then
@@ -331,7 +331,7 @@ revoke() {
     [ ! -f "${CRTDIR}/${cn}.crt" ] && error "Unknow CN : ${cn}"
 
     # check if CRT is a valid
-    "${OPENSSL}" x509 -noout -subject -in "${CRTDIR}/${cn}.crt" >/dev/null 2>&1 || error "${CRTDIR}/${cn}.crt is not a valid CRT, you msust delete it !"
+    "${OPENSSL}" x509 -noout -subject -in "${CRTDIR}/${cn}.crt" >/dev/null 2>&1 || error "${CRTDIR}/${cn}.crt is not a valid CRT, you must delete it !"
 
     # ask for CA passphrase
     ask_ca_password 0

@@ -5,6 +5,29 @@
 
 set -e
 
+VERSION="1.0.0"
+
+show_version() {
+    cat <<END
+shellpki version ${VERSION}
+
+Copyright 2010-2019 Evolix <info@evolix.fr>,
+                    Thomas Martin <tmartin@evolix.fr>,
+                    Gregory Colpart <reg@evolix.fr>,
+                    Romain Dessort <rdessort@evolix.fr>,
+                    Benoit Série <bserie@evolix.fr>,
+                    Victor Laborie <vlaborie@evolix.fr>,
+                    Daniel Jakots <djakots@evolix.fr>,
+                    Patrick Marchand <pmarchand@evolix.fr>,
+                    Jérémy Lecour <jlecour@evolix.fr>
+                    and others.
+
+shellpki comes with ABSOLUTELY NO WARRANTY.  This is free software,
+and you are welcome to redistribute it under certain conditions.
+See the MIT Licence for details.
+END
+}
+
 init() {
     umask 0177
 
@@ -549,6 +572,11 @@ main() {
         check)
             shift
             check "$@"
+        ;;
+
+        version)
+            show_version
+            exit 0
         ;;
 
         *)

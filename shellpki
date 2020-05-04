@@ -311,16 +311,20 @@ create() {
         "${OPENSSL_BIN}" req \
             -noout -subject \
             -in "${csr_file}" \
-            >/dev/null 2>&1 \
-        || error "${csr_file} is not a valid CSR !"
+            >/dev/null 2>&1
+        if [ "$?" -ne 0 ]; then
+            error "${csr_file} is not a valid CSR !"
+        fi
 
         # check if csr_file contain a CN
          "${OPENSSL_BIN}" req \
             -noout -subject         \
             -in "${csr_file}" \
             | grep -Eo "CN\s*=[^,/]*" \
-            >/dev/null 2>&1 \
-        || error "${csr_file} don't contain a CommonName !"
+            >/dev/null 2>&1
+        if [ "$?" -ne 0 ]; then
+            error "${csr_file} doesn't contain a CommonName !"
+        fi
 
         # get CN from CSR
         cn=$("${OPENSSL_BIN}" req -noout -subject -in "${csr_file}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs)
@@ -436,8 +440,10 @@ EOF
             -noout \
             -subject \
             -in "${CRT_DIR}/${cn}.crt" \
-            >/dev/null 2>&1 \
-        || rm -f "${CRT_DIR}/${cn}.crt"
+            >/dev/null 2>&1
+        if [ "$?" -ne 0 ]; then
+            rm -f "${CRT_DIR}/${cn}.crt"
+        fi
 
         if [ ! -f "${CRT_DIR}/${cn}.crt" ]; then
             error "Error in CSR creation"
@@ -510,8 +516,10 @@ revoke() {
         -noout \
         -subject \
         -in "${CRT_DIR}/${cn}.crt" \
-        >/dev/null 2>&1 \
-    || error "${CRT_DIR}/${cn}.crt is not a valid CRT, you must delete it !"
+        >/dev/null 2>&1
+    if [ "$?" -ne 0 ]; then
+        error "${CRT_DIR}/${cn}.crt is not a valid CRT, you must delete it !"
+    fi
 
     # ask for CA passphrase
     ask_ca_password 0
@@ -643,7 +651,7 @@ main() {
     OPENSSL_BIN=$(command -v openssl)
     SUFFIX=$(/bin/date +"%s")
 
-    if ! getent passwd "${PKI_USER}" >/dev/null || ! getent group "${PKI_USER}" >/dev/null; then
+    if ! getent passwd "${PKI_USER}" >/dev/null  ! getent group "${PKI_USER}" >/dev/null; then
         error "You must create ${PKI_USER} user and group !"
     fi
 

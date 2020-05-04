@@ -309,7 +309,8 @@ create() {
 
         # check if csr_file is a CSR
         "${OPENSSL_BIN}" req \
-            -noout -subject \
+            -noout \
+            -subject \
             -in "${csr_file}" \
             >/dev/null 2>&1
         if [ "$?" -ne 0 ]; then
@@ -318,7 +319,8 @@ create() {
 
         # check if csr_file contain a CN
          "${OPENSSL_BIN}" req \
-            -noout -subject         \
+            -noout \
+            -subject         \
             -in "${csr_file}" \
             | grep -Eo "CN\s*=[^,/]*" \
             >/dev/null 2>&1
@@ -594,8 +596,8 @@ check() {
     for cert in ${CRT_DIR}/*; do
         end_date=$(openssl x509 -noout -enddate -in "${cert}" | cut -d'=' -f2)
         end_epoch=$(date -ud "${end_date}" +'%s')
-        diff_epoch=$((end_epoch - cur_epoch))
-        diff_day=$((diff_epoch/60/60/24))
+        diff_epoch=$(( end_epoch - cur_epoch ))
+        diff_day=$(( diff_epoch / 60 / 60 / 24 ))
         if [ "${diff_day}" -lt "${min_day}" ]; then
             if [ "${diff_day}" -le 0 ]; then
                 echo "${cert} has expired"

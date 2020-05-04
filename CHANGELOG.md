@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * Rename internal function usage() to show_usage()
 * More readable variable names
+* verify_ca_password() looks for a previously set password and verifies it
 
 ### Deprecated
 

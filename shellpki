@@ -189,27 +189,40 @@ warning() {
     echo "${1}" >&2
 }
 
-ask_ca_password() {
-    [ ! -f "${CA_KEY}" ] && error "You must initialize your's PKI with shellpki init !"
-    attempt=$((${1} + 1))
-    if [ "${attempt}" -gt 1 ]; then
-        warning "Invalid password, retry."
-    fi
-    trap 'unset CA_PASSWORD' 0
-    stty -echo
-    printf "Password for CA key : "
-    read -r CA_PASSWORD
-    stty echo
-    printf "\n"
-
-    if [ -z "${CA_PASSWORD}" ]; then
-        ask_ca_password "${attempt}"
-    fi
+verify_ca_password() {
     CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" rsa \
         -in "${CA_KEY}"    \
         -passin env:CA_PASSWORD \
-        >/dev/null 2>&1 \
-    || ask_ca_password "${attempt}"
+        >/dev/null 2>&1
+}
+
+ask_ca_password() {
+    attempt=${1:-0}
+    max_attempt=3
+
+    trap 'unset CA_PASSWORD' 0
+
+    if [ ! -f "${CA_KEY}" ]; then
+        error "You must initialize your PKI with \`shellpki init' !"
+    fi
+    if [ "${attempt}" -gt 0 ]; then
+        warning "Invalid password, retry."
+    fi
+    if [ "${attempt}" -ge "${max_attempt}" ]; then
+        error "Maximum number of attempts reached (${max_attempt})."
+    fi
+    if [ -z "${CA_PASSWORD}" ]; then
+        stty -echo
+        printf "Password for CA key : "
+        read -r CA_PASSWORD
+        stty echo
+        printf "\n"
+    fi
+    if [ -z "${CA_PASSWORD}" ] || ! verify_ca_password; then
+        unset CA_PASSWORD
+        attempt=$(( attempt + 1 ))
+        ask_ca_password "${attempt}"
+    fi
 }
 
 create() {

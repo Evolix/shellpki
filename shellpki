@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# shellpki is a wrapper around openssl to manage a small PKI
+# shellpki is a wrapper around OpenSSL to manage a small PKI
 #
 
 set -e

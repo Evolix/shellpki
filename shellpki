@@ -38,7 +38,10 @@ init() {
     [ -f "${SERIAL}" ] || echo "01" > "${SERIAL}"
 
     cn="${1:-}"
-    [ -z "${cn}" ] && usage >&2 && exit 1
+    if [ -z "${cn}" ]; then
+        show_usage >&2
+        exit 1
+    fi
 
     if [ -f "${CAKEY}" ]; then
         printf "%s already exists, do you really want to erase it ? [y/N] " "${CAKEY}"
@@ -79,7 +82,10 @@ ocsp() {
     umask 0177
 
     ocsp_uri="${1:-}"
-    [ -z "${ocsp_uri}" ] && usage >&2 && exit 1
+    if [ -z "${ocsp_uri}" ]; then
+        show_usage >&2
+        exit 1
+    fi
 
     url=$(echo "${ocsp_uri}"|cut -d':' -f1)
     port=$(echo "${ocsp_uri}"|cut -d':' -f2)
@@ -113,7 +119,7 @@ EOF
     exec "${OPENSSL}" ocsp -ignore_err -index "${INDEX}" -port "${port}" -rsigner "${OCSPCERT}" -rkey "${OCSPKEY}" -CA "${CACERT}" -text
 }
 
-usage() {
+show_usage() {
     cat <<EOF
 Usage: ${0} <subcommand> [options] [CommonName]
 
@@ -126,9 +132,9 @@ Run OCSPD server :
     ${0} ocsp <ocsp_uri:ocsp_port>
 
 Create a client cert with key and CSR directly generated on server
-(use -p for set a password on client key) :
+(use -p or --password-file to set a password on the client key) :
 
-    ${0} create [-p] <commonName>
+    ${0} create [-p|--password-file=<FILE>] <commonName>
 
 Create a client cert from a CSR (doesn't need key) :
 
@@ -284,7 +290,10 @@ create() {
 
         echo "The CRT file is available in ${CRTDIR}/${cn}.crt"
     else
-        [ -z "${cn}" ] && usage >&2 && exit 1
+        if [ -z "${cn}" ]; then
+            show_usage >&2
+            exit 1
+        fi
 
         # check if CN already exist
         [ -f "${CRTDIR}/${cn}.crt" ] && error "${cn} already used !"
@@ -409,7 +418,10 @@ EOF
 }
 
 revoke() {
-    [ "${1}" = "" ] && usage >&2 && exit 1
+    if [ "${1}" = "" ]; then
+        show_usage >&2
+        exit 1
+    fi
 
     # get CN from param
     cn="${1}"
@@ -579,8 +591,13 @@ main() {
             exit 0
         ;;
 
+        help)
+            show_usage
+            exit 0
+        ;;
+
         *)
-            usage >&2
+            show_usage >&2
             exit 1
         ;;
     esac

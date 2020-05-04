@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Create a changelog
 * Add a version number and `version` command
 * Accept a `password-file` command line option to read password from a file
+* CA key length is configurable (minimum 4096)
 
 ### Changed
 

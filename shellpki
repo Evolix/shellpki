@@ -55,7 +55,7 @@ init() {
     if [ ! -f "${CA_KEY}" ]; then
         "${OPENSSL_BIN}" genrsa \
             -out "${CA_KEY}" \
-            -aes256 4096 \
+            -aes256 ${CA_KEY_LENGTH} \
             >/dev/null 2>&1
     fi
 
@@ -604,7 +604,14 @@ main() {
     PKCS12_DIR="${CA_DIR}/pkcs12"
     OVPN_DIR="${CA_DIR}/openvpn"
 
+    CA_KEY_LENGTH=4096
+    if [ "${CA_KEY_LENGTH}" -lt 4096 ]; then
+        error "CA key must be at least 4096 bits long."
+    fi
     KEY_LENGTH=2048
+    if [ "${KEY_LENGTH}" -lt 2048 ]; then
+        error "User key must be at least 2048 bits long."
+    fi
 
     OPENSSL_BIN=$(command -v openssl)
     SUFFIX=$(/bin/date +"%s")

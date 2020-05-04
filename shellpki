@@ -98,6 +98,7 @@ ocsp() {
         show_usage >&2
         exit 1
     fi
+    ocsp_csr_file="${CSR_DIR}/ocsp.csr"
 
     url=$(echo "${ocsp_uri}" | cut -d':' -f1)
     port=$(echo "${ocsp_uri}" | cut -d':' -f2)
@@ -113,7 +114,7 @@ ocsp() {
         -batch \
         -new \
         -key "${OCSP_KEY}" \
-        -out "${CSR_DIR}/ocsp.csr" \
+        -out "${ocsp_csr_file}" \
         -config /dev/stdin <<EOF
 $(cat "${CONF_FILE}")
 commonName_default = ${url}
@@ -128,7 +129,7 @@ EOF
     if [ ! -f "${OCSP_CERT}" ]; then
         CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
             -extensions v3_ocsp \
-            -in "${CSR_DIR}/ocsp.csr" \
+            -in "${ocsp_csr_file}" \
             -out "${OCSP_CERT}" \
             -passin env:CA_PASSWORD \
             -config "${CONF_FILE}"
@@ -357,6 +358,8 @@ create() {
             warning "Warning: --password-file is ignored with -f|--file|--crt-file"
         fi
 
+        crt_file="${CRT_DIR}/${cn}.crt"
+
         # ask for CA passphrase
         ask_ca_password 0
 
@@ -401,18 +404,23 @@ create() {
             -config "${CONF_FILE}" \
             -in "${csr_file}" \
             -passin env:CA_PASSWORD \
-            -out "${CRT_DIR}/${cn}.crt" \
+            -out "${crt_file}" \
             ${crt_expiration_arg}
 
-        echo "The CRT file is available in ${CRT_DIR}/${cn}.crt"
+        echo "The CRT file is available in ${crt_file}"
     else
         if [ -z "${cn}" ]; then
             show_usage >&2
             exit 1
         fi
+        csr_file="${CSR_DIR}/${cn}-${SUFFIX}.csr"
+        crt_file="${CRT_DIR}/${cn}.crt"
+        key_file="${KEY_DIR}/${cn}-${SUFFIX}.key"
+        ovpn_file="${OVPN_DIR}/${cn}-${SUFFIX}.ovpn"
+        pkcs12_file="${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
 
         # check if CN already exist
-        if [ -f "${CRT_DIR}/${cn}.crt" ]; then
+        if [ -f "${crt_file}" ]; then
             printf "%s already exists, do you revoke and recreate it ? [y/N] " "${cn}"
             read -r REPLY
             resp=$(echo "${REPLY}" | tr 'Y' 'y')
@@ -449,12 +457,12 @@ create() {
             PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" genrsa \
                 -aes256 \
                 -passout env:PASSWORD \
-                -out "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+                -out "${key_file}" \
                 ${KEY_LENGTH} \
                 >/dev/null 2>&1
         else
-            "${OPENSSL_BIN}" genrsa                           \
-                -out "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+            "${OPENSSL_BIN}" genrsa \
+                -out "${key_file}" \
                 ${KEY_LENGTH} \
                 >/dev/null 2>&1
         fi
@@ -464,9 +472,9 @@ create() {
             PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" req \
                 -batch \
                 -new \
-                -key "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+                -key "${key_file}" \
                 -passin env:PASSWORD \
-                -out "${CSR_DIR}/${cn}-${SUFFIX}.csr" \
+                -out "${csr_file}" \
                 -config /dev/stdin <<EOF
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
@@ -476,8 +484,8 @@ EOF
             "${OPENSSL_BIN}" req \
                 -batch \
                 -new \
-                -key "${KEY_DIR}/${cn}-${SUFFIX}.key" \
-                -out "${CSR_DIR}/${cn}-${SUFFIX}.csr" \
+                -key "${key_file}" \
+                -out "${csr_file}" \
                 -config /dev/stdin <<EOF
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
@@ -488,27 +496,26 @@ EOF
         CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
             -config "${CONF_FILE}" \
             -passin env:CA_PASSWORD \
-            -in "${CSR_DIR}/${cn}-${SUFFIX}.csr" \
-            -out "${CRT_DIR}/${cn}.crt" \
+            -in "${csr_file}" \
+            -out "${crt_file}" \
             ${crt_expiration_arg}
 
         # check if CRT is a valid
         "${OPENSSL_BIN}" x509 \
             -noout \
             -subject \
-            -in "${CRT_DIR}/${cn}.crt" \
+            -in "${crt_file}" \
             >/dev/null 2>&1
         if [ "$?" -ne 0 ]; then
-            rm -f "${CRT_DIR}/${cn}.crt"
+            rm -f "${crt_file}"
         fi
-
-        if [ ! -f "${CRT_DIR}/${cn}.crt" ]; then
+        if [ ! -f "${crt_file}" ]; then
             error "Error in CSR creation"
         fi
 
-        chmod 640 "${CRT_DIR}/${cn}.crt"
+        chmod 640 "${crt_file}"
 
-        echo "The CRT file is available in ${CRT_DIR}/${cn}.crt"
+        echo "The CRT file is available in ${crt_file}"
 
         # generate pkcs12 format
         if [ -n "${PASSWORD}" ]; then
@@ -517,39 +524,39 @@ EOF
                 -nodes \
                 -passin env:PASSWORD \
                 -passout env:PASSWORD \
-                -inkey "${KEY_DIR}/${cn}-${SUFFIX}.key" \
-                -in "${CRT_DIR}/${cn}.crt" \
-                -out "${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
+                -inkey "${key_file}" \
+                -in "${crt_file}" \
+                -out "${pkcs12_file}"
         else
              "${OPENSSL_BIN}" pkcs12 \
                  -export \
                  -nodes \
                  -passout pass: \
-                 -inkey "${KEY_DIR}/${cn}-${SUFFIX}.key" \
-                 -in "${CRT_DIR}/${cn}.crt" \
-                 -out "${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
+                 -inkey "${key_file}" \
+                 -in "${crt_file}" \
+                 -out "${pkcs12_file}"
         fi
 
-        chmod 640 "${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
-        echo "The PKCS12 config file is available in ${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
+        chmod 640 "${pkcs12_file}"
+        echo "The PKCS12 config file is available in ${pkcs12_file}"
 
         # generate openvpn format
         if [ -e "${CA_DIR}/ovpn.conf" ]; then
-            cat "${CA_DIR}/ovpn.conf" - > "${OVPN_DIR}/${cn}-${SUFFIX}.ovpn" <<EOF
+            cat "${CA_DIR}/ovpn.conf" - > "${ovpn_file}" <<EOF
 <ca>
 $(cat "${CA_CERT}")
 </ca>
 
 <cert>
-$(cat "${CRT_DIR}/${cn}.crt")
+$(cat "${crt_file}")
 </cert>
 
 <key>
-$(cat "${KEY_DIR}/${cn}-${SUFFIX}.key")
+$(cat "${key_file}")
 </key>
 EOF
-            chmod 640 "${OVPN_DIR}/${cn}-${SUFFIX}.ovpn"
-            echo "The OpenVPN config file is available in ${OVPN_DIR}/${cn}-${SUFFIX}.ovpn"
+            chmod 640 "${ovpn_file}"
+            echo "The OpenVPN config file is available in ${ovpn_file}"
         fi
     fi
 }
@@ -559,39 +566,43 @@ revoke() {
         show_usage >&2
         exit 1
     fi
+    crt_file="${CRT_DIR}/${cn}.crt"
 
     # get CN from param
     cn="${1}"
 
     # check if CRT exists
-    if [ ! -f "${CRT_DIR}/${cn}.crt" ]; then
-        error "Unknow CN : ${cn}"
+    if [ ! -f "${crt_file}" ]; then
+        error "Unknow CN : ${cn} (\`${crt_file}' not found)"
     fi
 
     # check if CRT is a valid
     "${OPENSSL_BIN}" x509 \
         -noout \
         -subject \
-        -in "${CRT_DIR}/${cn}.crt" \
+        -in "${crt_file}" \
         >/dev/null 2>&1
     if [ "$?" -ne 0 ]; then
-        error "${CRT_DIR}/${cn}.crt is not a valid CRT, you must delete it !"
+        error "${crt_file} is not a valid CRT, you must delete it !"
     fi
 
     # ask for CA passphrase
     ask_ca_password 0
 
-    echo "Revoke certificate ${CRT_DIR}/${cn}.crt :"
+    echo "Revoke certificate ${crt_file} :"
     CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
         -config "${CONF_FILE}" \
         -passin env:CA_PASSWORD \
-        -revoke "${CRT_DIR}/${cn}.crt" \
-    && rm "${CRT_DIR}/${cn}.crt"
+        -revoke "${crt_file}"
+    if [ "$?" -eq 0 ]; then
+        rm "${crt_file}"
+    fi
 
     CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
         -config "${CONF_FILE}" \
         -passin env:CA_PASSWORD \
-        -gencrl -out "${CRL}"
+        -gencrl \
+        -out "${CRL}"
 }
 
 list() {

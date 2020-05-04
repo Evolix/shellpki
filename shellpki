@@ -327,7 +327,14 @@ create() {
 
         # check if CN already exist
         if [ -f "${CRT_DIR}/${cn}.crt" ]; then
-            error "${cn} already used !"
+            printf "%s already exists, do you revoke and recreate it ? [y/N] " "${cn}"
+            read -r REPLY
+            resp=$(echo "${REPLY}" | tr 'Y' 'y')
+            if [ "${resp}" = "y" ]; then
+                revoke "${cn}"
+            else
+                error "Abort"
+            fi
         fi
 
         # ca sign and generate cert
@@ -346,7 +353,14 @@ create() {
 
         # check if CN already exist
         if [ -f "${CRT_DIR}/${cn}.crt" ]; then
-            error "${cn} already used !"
+            printf "%s already exists, do you revoke and recreate it ? [y/N] " "${cn}"
+            read -r REPLY
+            resp=$(echo "${REPLY}" | tr 'Y' 'y')
+            if [ "${resp}" = "y" ]; then
+                revoke "${cn}"
+            else
+                error "Abort"
+            fi
         fi
 
         # ask for CA passphrase

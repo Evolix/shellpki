@@ -154,35 +154,79 @@ ask_ca_password() {
 }
 
 create() {
-    from_csr=1
-    with_pass=1
+    from_csr=0
+    ask_user_pass=0
 
+    # Parse options
+    # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
     while :; do
-        case "${1}" in
-            -f|--file)
-                shift
-                [ ! -f "${1}" ] && error "${1} must be a file"
-                from_csr=0
-                csr_file=$(readlink -f "${1}")
-                shift;;
+        case $1 in
+            -f|--file|--csr-file)
+                # csr-file option, with value separated by space
+                if [ -n "$2" ]; then
+                    from_csr=1
+                    csr_file=$(readlink -f -- "${2}")
+                    shift
+                else
+                    printf 'ERROR: "--csr-file" requires a non-empty option argument.\n' >&2
+                    exit 1
+                fi
+                ;;
+            --file=?*|--csr-file=?*)
+                from_csr=1
+                # csr-file option, with value separated by =
+                csr_file=$(readlink -f -- "${1#*=}")
+                ;;
+            --file=|--csr-file=)
+                # csr-file options, without value
+                printf 'ERROR: "--csr-file" requires a non-empty option argument.\n' >&2
+                exit 1
+                ;;
             -p|--password)
-                with_pass=0
-                shift;;
+                ask_pass=1
+                ;;
+            --password-file)
+                # password-file option, with value separated by space
+                if [ -n "$2" ]; then
+                    password_file=$(readlink -f -- "${2}")
+                    shift
+                else
+                    printf 'ERROR: "--password-file" requires a non-empty option argument.\n' >&2
+                    exit 1
+                fi
+                ;;
+            --password-file=?*)
+                # password-file option, with value separated by =
+                password_file=$(readlink -f -- "${1#*=}")
+                ;;
+            --password-file=)
+                # password-file options, without value
+                printf 'ERROR: "--password-file" requires a non-empty option argument.\n' >&2
+                exit 1
+                ;;
             --)
+                # End of all options.
                 shift
-                break;;
+                break
+                ;;
             -?*)
-                warning "unknow option ${1} (ignored)"
-                shift;;
+                # ignore unknown options
+                printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+                ;;
             *)
-                break;;
+                # Default case: If no more options then break out of the loop.
+                break
+                ;;
         esac
+
+        shift
     done
 
     cn="${1:-}"
 
-    if [ "${from_csr}" -eq 0 ]; then
-        [ "${with_pass}" -eq 0 ] && warning "Warning: -p made nothing with -f"
+    if [ "${from_csr}" -eq 1 ]; then
+        [ "${ask_pass}" -eq 1 ] && warning "Warning: -p|--password is ignored with -f|--file|--crt-file"
+        [ -n "${password_file}" ] && warning "Warning: --password-file is ignored with -f|--file|--crt-file"
 
         # ask for CA passphrase
         ask_ca_password 0
@@ -192,7 +236,7 @@ create() {
             -noout -subject     \
             -in "${csr_file}"   \
             >/dev/null 2>&1     \
-            || error "${csr_file} is not a valid CSR !"
+        || error "${csr_file} is not a valid CSR !"
 
         # check if csr_file contain a CN
          "${OPENSSL}" req               \
@@ -200,7 +244,7 @@ create() {
             -in "${csr_file}"           \
             | grep -Eo "CN\s*=[^,/]*"   \
             >/dev/null 2>&1             \
-            || error "${csr_file} don't contain a CommonName !"
+        || error "${csr_file} don't contain a CommonName !"
 
         # get CN from CSR
         cn=$("${OPENSSL}" req -noout -subject -in "${csr_file}"|grep -Eo "CN\s*=[^,/]*"|cut -d'=' -f2|xargs)
@@ -225,18 +269,25 @@ create() {
         # ask for CA passphrase
         ask_ca_password 0
 
-        # ask for client key passphrase
-        if [ "${with_pass}" -eq 0 ]; then
+        if [ -n "${password_file}" ] && [ -r "${password_file}" ]; then
+            PASSWORD=$(head -n 1 "${password_file}" | tr -d '\n')
+            if [ -z "${PASSWORD}" ]; then
+                warning "Warning: empty password from file \`${password_file}'"
+            fi
+        elif [ "${ask_pass}" -eq 1 ]; then
             trap 'unset PASSWORD' 0
             stty -echo
             printf "Password for user key : "
             read -r PASSWORD
             stty echo
             printf "\n"
+            if [ -z "${PASSWORD}" ]; then
+                warning "Warning: empty password from input"
+            fi
         fi
 
         # generate private key
-        if [ "${with_pass}" -eq 0 ]; then
+        if [ -n "${PASSWORD}" ]; then
             PASSWORD="${PASSWORD}" "$OPENSSL" genrsa    \
                 -aes256 -passout env:PASSWORD           \
                 -out "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
@@ -247,7 +298,7 @@ create() {
                 2048 >/dev/null 2>&1
         fi
 
-        if [ "${with_pass}" -eq 0 ]; then
+        if [ -n "${PASSWORD}" ]; then
             # generate csr req
             PASSWORD="${PASSWORD}" "$OPENSSL" req       \
                 -batch -new                             \
@@ -280,9 +331,9 @@ EOF
         # check if CRT is a valid
         "${OPENSSL}" x509                           \
             -noout -subject                         \
-            -in "${CRTDIR}/${cn}.crt"          \
+            -in "${CRTDIR}/${cn}.crt"               \
             >/dev/null 2>&1                         \
-            || rm -f "${CRTDIR}/${cn}.crt"
+        || rm -f "${CRTDIR}/${cn}.crt"
 
         [ -f "${CRTDIR}/${cn}.crt" ] || error "Error in CSR creation"
 
@@ -291,10 +342,23 @@ EOF
         echo "The CRT file is available in ${CRTDIR}/${cn}.crt"
 
         # generate pkcs12 format
-        if [ "${with_pass}" -eq 0 ]; then
-            PASSWORD="${PASSWORD}"  "${OPENSSL}" pkcs12 -export -nodes -passin env:PASSWORD -passout env:PASSWORD -inkey "${KEYDIR}/${cn}-${TIMESTAMP}.key" -in "${CRTDIR}/${cn}.crt" -out "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
+        if [ -n "${PASSWORD}" ]; then
+            PASSWORD="${PASSWORD}" "${OPENSSL}" pkcs12 \
+                -export \
+                -nodes \
+                -passin env:PASSWORD \
+                -passout env:PASSWORD \
+                -inkey "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
+                -in "${CRTDIR}/${cn}.crt" \
+                -out "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
         else
-             "${OPENSSL}" pkcs12 -export -nodes -passout pass: -inkey "${KEYDIR}/${cn}-${TIMESTAMP}.key" -in "${CRTDIR}/${cn}.crt" -out "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
+             "${OPENSSL}" pkcs12 \
+                 -export \
+                 -nodes \
+                 -passout pass: \
+                 -inkey "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
+                 -in "${CRTDIR}/${cn}.crt" \
+                 -out "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
         fi
 
         chmod 640 "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
@@ -414,8 +478,12 @@ main() {
     # default config
     # TODO : override with /etc/default/shellpki
     CONFFILE="/etc/shellpki/openssl.cnf"
-    PKIUSER="shellpki"
-    [ "$(uname)" = "OpenBSD" ] && PKIUSER="_shellpki"
+
+    if [ "$(uname)" = "OpenBSD" ]; then
+        PKIUSER="_shellpki"
+    else
+        PKIUSER="shellpki"
+    fi
 
     [ "${USER}" != "root" ] || [ "${USER}" != "${PKIUSER}" ] || error "Please become root before running ${0} !"
 

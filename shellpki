@@ -612,6 +612,13 @@ check() {
     done
 }
 
+is_user() {
+    getent passwd "${1}" >/dev/null
+}
+is_group() {
+    getent group "${1}" >/dev/null
+}
+
 main() {
     # default config
     # TODO : override with /etc/default/shellpki
@@ -657,7 +664,7 @@ main() {
     OPENSSL_BIN=$(command -v openssl)
     SUFFIX=$(/bin/date +"%s")
 
-    if ! getent passwd "${PKI_USER}" >/dev/null  ! getent group "${PKI_USER}" >/dev/null; then
+    if ! is_user "${PKI_USER}" || ! is_group "${PKI_USER}"; then
         error "You must create ${PKI_USER} user and group !"
     fi
 

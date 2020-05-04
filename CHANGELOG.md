@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Rename internal function usage() to show_usage()
 * More readable variable names
 * verify_ca_password() looks for a previously set password and verifies it
-* Extract function cert_end_date()
+* Extract cert_end_date() function
+* Extract is_user() and is_group() functions
 
 ### Deprecated
 

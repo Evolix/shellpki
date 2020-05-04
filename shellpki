@@ -485,7 +485,9 @@ main() {
         PKIUSER="shellpki"
     fi
 
-    [ "${USER}" != "root" ] || [ "${USER}" != "${PKIUSER}" ] || error "Please become root before running ${0} !"
+    if [ "${USER}" != "root" ] && [ "${USER}" != "${PKIUSER}" ]; then
+        error "Please become root before running ${0} !"
+    fi
 
     # retrieve CA path from config file
     CADIR=$(grep -E "^dir" "${CONFFILE}" | cut -d'=' -f2|xargs -n1)

@@ -276,6 +276,44 @@ create() {
                 printf 'ERROR: "--password-file" requires a non-empty option argument.\n' >&2
                 exit 1
                 ;;
+            --days)
+                # days option, with value separated by space
+                if [ -n "$2" ]; then
+                    days=${2}
+                    shift
+                else
+                    printf 'ERROR: "--days" requires a non-empty option argument.\n' >&2
+                    exit 1
+                fi
+                ;;
+            --days=?*)
+                # days option, with value separated by =
+                days=${1#*=}
+                ;;
+            --days=)
+                # days options, without value
+                printf 'ERROR: "--days" requires a non-empty option argument.\n' >&2
+                exit 1
+                ;;
+            --end-date)
+                # end-date option, with value separated by space
+                if [ -n "$2" ]; then
+                    end_date=${2}
+                    shift
+                else
+                    printf 'ERROR: "--end-date" requires a non-empty option argument.\n' >&2
+                    exit 1
+                fi
+                ;;
+            --end-date=?*)
+                # end-date option, with value separated by =
+                end_date=${1#*=}
+                ;;
+            --end-date=)
+                # end-date options, without value
+                printf 'ERROR: "--end-date" requires a non-empty option argument.\n' >&2
+                exit 1
+                ;;
             --)
                 # End of all options.
                 shift
@@ -294,7 +332,22 @@ create() {
         shift
     done
 
+    # The name of the certificate
     cn="${1:-}"
+
+    # Set expiration argument
+    crt_expiration_arg=""
+    if [ -n "${days}" ] && [ "${days}" -gt 0 ]; then
+        crt_expiration_arg="-days ${days}"
+    fi
+    if [ -n "${end_date}" ]; then
+        cert_end_date=$(TZ=:Zulu date --date "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
+        if [ "$?" -ne 0 ]; then
+            error "Invalid end date format : \`${end_date}' can't be parsed by date(1)"
+        else
+            crt_expiration_arg="-enddate ${cert_end_date}"
+        fi
+    fi
 
     if [ "${from_csr}" -eq 1 ]; then
         if [ "${ask_pass}" -eq 1 ]; then
@@ -348,7 +401,8 @@ create() {
             -config "${CONF_FILE}" \
             -in "${csr_file}" \
             -passin env:CA_PASSWORD \
-            -out "${CRT_DIR}/${cn}.crt"
+            -out "${CRT_DIR}/${cn}.crt" \
+            ${crt_expiration_arg}
 
         echo "The CRT file is available in ${CRT_DIR}/${cn}.crt"
     else
@@ -435,7 +489,8 @@ EOF
             -config "${CONF_FILE}" \
             -passin env:CA_PASSWORD \
             -in "${CSR_DIR}/${cn}-${SUFFIX}.csr" \
-            -out "${CRT_DIR}/${cn}.crt"
+            -out "${CRT_DIR}/${cn}.crt" \
+            ${crt_expiration_arg}
 
         # check if CRT is a valid
         "${OPENSSL_BIN}" x509 \

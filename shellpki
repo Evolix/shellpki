@@ -31,9 +31,9 @@ END
 init() {
     umask 0177
 
-    [ -d "${CADIR}" ] || mkdir -m 0750 "${CADIR}"
-    [ -d "${CRTDIR}" ] || mkdir -m 0750 "${CRTDIR}"
-    [ -f "${INDEX}" ] || touch "${INDEX}"
+    [ -d "${CA_DIR}" ] || mkdir -m 0750 "${CA_DIR}"
+    [ -d "${CRT_DIR}" ] || mkdir -m 0750 "${CRT_DIR}"
+    [ -f "${INDEX_FILE}" ] || touch "${INDEX_FILE}"
     [ -f "${CRL}" ] || touch "${CRL}"
     [ -f "${SERIAL}" ] || echo "01" > "${SERIAL}"
 
@@ -43,48 +43,48 @@ init() {
         exit 1
     fi
 
-    if [ -f "${CAKEY}" ]; then
-        printf "%s already exists, do you really want to erase it ? [y/N] " "${CAKEY}"
+    if [ -f "${CA_KEY}" ]; then
+        printf "%s already exists, do you really want to erase it ? [y/N] " "${CA_KEY}"
         read -r REPLY
         resp=$(echo "${REPLY}" | tr 'Y' 'y')
         if [ "${resp}" = "y" ]; then
-            rm -f "${CAKEY}" "${CACERT}"
+            rm -f "${CA_KEY}" "${CA_CERT}"
         fi
     fi
 
-    if [ ! -f "${CAKEY}" ]; then
-        "$OPENSSL" genrsa \
-            -out "${CAKEY}" \
+    if [ ! -f "${CA_KEY}" ]; then
+        "${OPENSSL_BIN}" genrsa \
+            -out "${CA_KEY}" \
             -aes256 4096 \
             >/dev/null 2>&1
     fi
 
-    if [ -f "${CACERT}" ]; then
-        printf "%s already exists, do you really want to erase it ? [y/N] " "${CACERT}"
+    if [ -f "${CA_CERT}" ]; then
+        printf "%s already exists, do you really want to erase it ? [y/N] " "${CA_CERT}"
         read -r REPLY
         resp=$(echo "${REPLY}" | tr 'Y' 'y')
         if [ "${resp}" = "y" ]; then
-            rm "${CACERT}"
+            rm "${CA_CERT}"
         fi
     fi
 
-    if [ ! -f "${CACERT}" ]; then
+    if [ ! -f "${CA_CERT}" ]; then
         ask_ca_password 0
     fi
 
-    if [ ! -f "${CACERT}" ]; then
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}" req \
+    if [ ! -f "${CA_CERT}" ]; then
+        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" req \
             -new \
             -batch \
             -sha512 \
             -x509 \
             -days 3650 \
             -extensions v3_ca \
-            -key "${CAKEY}" \
-            -out "${CACERT}" \
+            -key "${CA_KEY}" \
+            -out "${CA_CERT}" \
             -passin env:CA_PASSWORD \
             -config /dev/stdin <<EOF
-$(cat "${CONFFILE}")
+$(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
     fi
@@ -102,45 +102,45 @@ ocsp() {
     url=$(echo "${ocsp_uri}" | cut -d':' -f1)
     port=$(echo "${ocsp_uri}" | cut -d':' -f2)
 
-    if [ ! -f "${OCSPKEY}" ]; then
-        "$OPENSSL" genrsa \
-            -out "${OCSPKEY}" \
-            2048 \
+    if [ ! -f "${OCSP_KEY}" ]; then
+        "${OPENSSL_BIN}" genrsa \
+            -out "${OCSP_KEY}" \
+            ${KEY_LENGTH} \
             >/dev/null 2>&1
     fi
 
-    "$OPENSSL" req \
+    "${OPENSSL_BIN}" req \
         -batch \
         -new \
-        -key "${OCSPKEY}" \
-        -out "${CSRDIR}/ocsp.csr" \
+        -key "${OCSP_KEY}" \
+        -out "${CSR_DIR}/ocsp.csr" \
         -config /dev/stdin <<EOF
-$(cat "${CONFFILE}")
+$(cat "${CONF_FILE}")
 commonName_default = ${url}
 [ usr_cert ]
 authorityInfoAccess = OCSP;URI:http://${ocsp_uri}
 EOF
 
-    if [ ! -f "${OCSPCERT}" ]; then
+    if [ ! -f "${OCSP_CERT}" ]; then
         ask_ca_password 0
     fi
 
-    if [ ! -f "${OCSPCERT}" ]; then
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}" ca \
+    if [ ! -f "${OCSP_CERT}" ]; then
+        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
             -extensions v3_ocsp \
-            -in "${CSRDIR}/ocsp.csr" \
-            -out "${OCSPCERT}" \
+            -in "${CSR_DIR}/ocsp.csr" \
+            -out "${OCSP_CERT}" \
             -passin env:CA_PASSWORD \
-            -config "${CONFFILE}"
+            -config "${CONF_FILE}"
     fi
 
-    exec "${OPENSSL}" ocsp \
+    exec "${OPENSSL_BIN}" ocsp \
         -ignore_err \
-        -index "${INDEX}" \
+        -index "${INDEX_FILE}" \
         -port "${port}" \
-        -rsigner "${OCSPCERT}" \
-        -rkey "${OCSPKEY}" \
-        -CA "${CACERT}" \
+        -rsigner "${OCSP_CERT}" \
+        -rkey "${OCSP_KEY}" \
+        -CA "${CA_CERT}" \
         -text
 }
 
@@ -152,7 +152,7 @@ Initialize PKI (create CA key and self-signed cert) :
 
     ${0} init <commonName_for_CA>
 
-Run OCSPD server :
+Run OCSP_D server :
 
     ${0} ocsp <ocsp_uri:ocsp_port>
 
@@ -190,7 +190,7 @@ warning() {
 }
 
 ask_ca_password() {
-    [ ! -f "${CAKEY}" ] && error "You must initialize your's PKI with shellpki init !"
+    [ ! -f "${CA_KEY}" ] && error "You must initialize your's PKI with shellpki init !"
     attempt=$((${1} + 1))
     if [ "${attempt}" -gt 1 ]; then
         warning "Invalid password, retry."
@@ -205,8 +205,8 @@ ask_ca_password() {
     if [ -z "${CA_PASSWORD}" ]; then
         ask_ca_password "${attempt}"
     fi
-    CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}" rsa \
-        -in "${CAKEY}"    \
+    CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" rsa \
+        -in "${CA_KEY}"    \
         -passin env:CA_PASSWORD \
         >/dev/null 2>&1 \
     || ask_ca_password "${attempt}"
@@ -295,14 +295,14 @@ create() {
         ask_ca_password 0
 
         # check if csr_file is a CSR
-        "${OPENSSL}" req \
+        "${OPENSSL_BIN}" req \
             -noout -subject \
             -in "${csr_file}" \
             >/dev/null 2>&1 \
         || error "${csr_file} is not a valid CSR !"
 
         # check if csr_file contain a CN
-         "${OPENSSL}" req \
+         "${OPENSSL_BIN}" req \
             -noout -subject         \
             -in "${csr_file}" \
             | grep -Eo "CN\s*=[^,/]*" \
@@ -310,21 +310,21 @@ create() {
         || error "${csr_file} don't contain a CommonName !"
 
         # get CN from CSR
-        cn=$("${OPENSSL}" req -noout -subject -in "${csr_file}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs)
+        cn=$("${OPENSSL_BIN}" req -noout -subject -in "${csr_file}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs)
 
         # check if CN already exist
-        if [ -f "${CRTDIR}/${cn}.crt" ]; then
+        if [ -f "${CRT_DIR}/${cn}.crt" ]; then
             error "${cn} already used !"
         fi
 
         # ca sign and generate cert
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}" ca \
-            -config "${CONFFILE}" \
+        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+            -config "${CONF_FILE}" \
             -in "${csr_file}" \
             -passin env:CA_PASSWORD \
-            -out "${CRTDIR}/${cn}.crt"
+            -out "${CRT_DIR}/${cn}.crt"
 
-        echo "The CRT file is available in ${CRTDIR}/${cn}.crt"
+        echo "The CRT file is available in ${CRT_DIR}/${cn}.crt"
     else
         if [ -z "${cn}" ]; then
             show_usage >&2
@@ -332,7 +332,7 @@ create() {
         fi
 
         # check if CN already exist
-        if [ -f "${CRTDIR}/${cn}.crt" ]; then
+        if [ -f "${CRT_DIR}/${cn}.crt" ]; then
             error "${cn} already used !"
         fi
 
@@ -359,107 +359,107 @@ create() {
 
         # generate private key
         if [ -n "${PASSWORD}" ]; then
-            PASSWORD="${PASSWORD}" "$OPENSSL" genrsa \
+            PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" genrsa \
                 -aes256 \
                 -passout env:PASSWORD \
-                -out "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
-                2048 \
+                -out "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+                ${KEY_LENGTH} \
                 >/dev/null 2>&1
         else
-            "$OPENSSL" genrsa                           \
-                -out "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
-                2048 \
+            "${OPENSSL_BIN}" genrsa                           \
+                -out "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+                ${KEY_LENGTH} \
                 >/dev/null 2>&1
         fi
 
         if [ -n "${PASSWORD}" ]; then
             # generate csr req
-            PASSWORD="${PASSWORD}" "$OPENSSL" req \
+            PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" req \
                 -batch \
                 -new \
-                -key "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
+                -key "${KEY_DIR}/${cn}-${SUFFIX}.key" \
                 -passin env:PASSWORD \
-                -out "${CSRDIR}/${cn}-${TIMESTAMP}.csr" \
+                -out "${CSR_DIR}/${cn}-${SUFFIX}.csr" \
                 -config /dev/stdin <<EOF
-$(cat "${CONFFILE}")
+$(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
         else
             # generate csr req
-            "$OPENSSL" req \
+            "${OPENSSL_BIN}" req \
                 -batch \
                 -new \
-                -key "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
-                -out "${CSRDIR}/${cn}-${TIMESTAMP}.csr" \
+                -key "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+                -out "${CSR_DIR}/${cn}-${SUFFIX}.csr" \
                 -config /dev/stdin <<EOF
-$(cat "${CONFFILE}")
+$(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
         fi
 
         # ca sign and generate cert
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL}" ca \
-            -config "${CONFFILE}" \
+        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+            -config "${CONF_FILE}" \
             -passin env:CA_PASSWORD \
-            -in "${CSRDIR}/${cn}-${TIMESTAMP}.csr" \
-            -out "${CRTDIR}/${cn}.crt"
+            -in "${CSR_DIR}/${cn}-${SUFFIX}.csr" \
+            -out "${CRT_DIR}/${cn}.crt"
 
         # check if CRT is a valid
-        "${OPENSSL}" x509 \
+        "${OPENSSL_BIN}" x509 \
             -noout \
             -subject \
-            -in "${CRTDIR}/${cn}.crt" \
+            -in "${CRT_DIR}/${cn}.crt" \
             >/dev/null 2>&1 \
-        || rm -f "${CRTDIR}/${cn}.crt"
+        || rm -f "${CRT_DIR}/${cn}.crt"
 
-        if [ ! -f "${CRTDIR}/${cn}.crt" ]; then
+        if [ ! -f "${CRT_DIR}/${cn}.crt" ]; then
             error "Error in CSR creation"
         fi
 
-        chmod 640 "${CRTDIR}/${cn}.crt"
+        chmod 640 "${CRT_DIR}/${cn}.crt"
 
-        echo "The CRT file is available in ${CRTDIR}/${cn}.crt"
+        echo "The CRT file is available in ${CRT_DIR}/${cn}.crt"
 
         # generate pkcs12 format
         if [ -n "${PASSWORD}" ]; then
-            PASSWORD="${PASSWORD}" "${OPENSSL}" pkcs12 \
+            PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" pkcs12 \
                 -export \
                 -nodes \
                 -passin env:PASSWORD \
                 -passout env:PASSWORD \
-                -inkey "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
-                -in "${CRTDIR}/${cn}.crt" \
-                -out "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
+                -inkey "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+                -in "${CRT_DIR}/${cn}.crt" \
+                -out "${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
         else
-             "${OPENSSL}" pkcs12 \
+             "${OPENSSL_BIN}" pkcs12 \
                  -export \
                  -nodes \
                  -passout pass: \
-                 -inkey "${KEYDIR}/${cn}-${TIMESTAMP}.key" \
-                 -in "${CRTDIR}/${cn}.crt" \
-                 -out "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
+                 -inkey "${KEY_DIR}/${cn}-${SUFFIX}.key" \
+                 -in "${CRT_DIR}/${cn}.crt" \
+                 -out "${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
         fi
 
-        chmod 640 "${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
-        echo "The PKCS12 config file is available in ${PKCS12DIR}/${cn}-${TIMESTAMP}.p12"
+        chmod 640 "${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
+        echo "The PKCS12 config file is available in ${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
 
         # generate openvpn format
-        if [ -e "${CADIR}/ovpn.conf" ]; then
-            cat "${CADIR}/ovpn.conf" - > "${OVPNDIR}/${cn}-${TIMESTAMP}.ovpn" <<EOF
+        if [ -e "${CA_DIR}/ovpn.conf" ]; then
+            cat "${CA_DIR}/ovpn.conf" - > "${OVPN_DIR}/${cn}-${SUFFIX}.ovpn" <<EOF
 <ca>
-$(cat "${CACERT}")
+$(cat "${CA_CERT}")
 </ca>
 
 <cert>
-$(cat "${CRTDIR}/${cn}.crt")
+$(cat "${CRT_DIR}/${cn}.crt")
 </cert>
 
 <key>
-$(cat "${KEYDIR}/${cn}-${TIMESTAMP}.key")
+$(cat "${KEY_DIR}/${cn}-${SUFFIX}.key")
 </key>
 EOF
-            chmod 640 "${OVPNDIR}/${cn}-${TIMESTAMP}.ovpn"
-            echo "The OpenVPN config file is available in ${OVPNDIR}/${cn}-${TIMESTAMP}.ovpn"
+            chmod 640 "${OVPN_DIR}/${cn}-${SUFFIX}.ovpn"
+            echo "The OpenVPN config file is available in ${OVPN_DIR}/${cn}-${SUFFIX}.ovpn"
         fi
     fi
 }
@@ -474,36 +474,36 @@ revoke() {
     cn="${1}"
 
     # check if CRT exists
-    if [ ! -f "${CRTDIR}/${cn}.crt" ]; then
+    if [ ! -f "${CRT_DIR}/${cn}.crt" ]; then
         error "Unknow CN : ${cn}"
     fi
 
     # check if CRT is a valid
-    "${OPENSSL}" x509 \
+    "${OPENSSL_BIN}" x509 \
         -noout \
         -subject \
-        -in "${CRTDIR}/${cn}.crt" \
+        -in "${CRT_DIR}/${cn}.crt" \
         >/dev/null 2>&1 \
-    || error "${CRTDIR}/${cn}.crt is not a valid CRT, you must delete it !"
+    || error "${CRT_DIR}/${cn}.crt is not a valid CRT, you must delete it !"
 
     # ask for CA passphrase
     ask_ca_password 0
 
-    echo "Revoke certificate ${CRTDIR}/${cn}.crt :"
-    CA_PASSWORD="${CA_PASSWORD}" "$OPENSSL" ca \
-        -config "${CONFFILE}" \
+    echo "Revoke certificate ${CRT_DIR}/${cn}.crt :"
+    CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+        -config "${CONF_FILE}" \
         -passin env:CA_PASSWORD \
-        -revoke "${CRTDIR}/${cn}.crt" \
-    && rm "${CRTDIR}/${cn}.crt"
+        -revoke "${CRT_DIR}/${cn}.crt" \
+    && rm "${CRT_DIR}/${cn}.crt"
 
-    CA_PASSWORD="${CA_PASSWORD}" "$OPENSSL" ca \
-        -config "${CONFFILE}" \
+    CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+        -config "${CONF_FILE}" \
         -passin env:CA_PASSWORD \
         -gencrl -out "${CRL}"
 }
 
 list() {
-    if [ ! -f "${INDEX}" ]; then
+    if [ ! -f "${INDEX_FILE}" ]; then
         exit 0
     fi
 
@@ -536,15 +536,15 @@ list() {
     done
 
     if [ "${list_valid}" -eq 0 ]; then
-        certs=$(grep "^V" "${INDEX}")
+        certs=$(grep "^V" "${INDEX_FILE}")
     fi
 
     if [ "${list_revoked}" -eq 0 ]; then
-        certs=$(grep "^R" "${INDEX}")
+        certs=$(grep "^R" "${INDEX_FILE}")
     fi
 
     if [ "${list_valid}" -eq 0 ] && [ "${list_revoked}" -eq 0 ]; then
-        certs=$(cat "${INDEX}")
+        certs=$(cat "${INDEX_FILE}")
     fi
 
     echo "${certs}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs -n1
@@ -556,7 +556,7 @@ check() {
     min_day=90
     cur_epoch=$(date -u +'%s')
 
-    for cert in ${CRTDIR}/*; do
+    for cert in ${CRT_DIR}/*; do
         end_date=$(openssl x509 -noout -enddate -in "${cert}" | cut -d'=' -f2)
         end_epoch=$(date -ud "${end_date}" +'%s')
         diff_epoch=$((end_epoch - cur_epoch))
@@ -574,48 +574,50 @@ check() {
 main() {
     # default config
     # TODO : override with /etc/default/shellpki
-    CONFFILE="/etc/shellpki/openssl.cnf"
+    CONF_FILE="/etc/shellpki/openssl.cnf"
 
     if [ "$(uname)" = "OpenBSD" ]; then
-        PKIUSER="_shellpki"
+        PKI_USER="_shellpki"
     else
-        PKIUSER="shellpki"
+        PKI_USER="shellpki"
     fi
 
-    if [ "${USER}" != "root" ] && [ "${USER}" != "${PKIUSER}" ]; then
+    if [ "${USER}" != "root" ] && [ "${USER}" != "${PKI_USER}" ]; then
         error "Please become root before running ${0} !"
     fi
 
     # retrieve CA path from config file
-    CADIR=$(grep -E "^dir" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1)
-    CAKEY=$(grep -E "^private_key" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CADIR}~")
-    CACERT=$(grep -E "^certificate" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CADIR}~")
-    OCSPKEY="${CADIR}/ocsp.key"
-    OCSPCERT="${CADIR}/ocsp.pem"
-    CRTDIR=$(grep -E "^certs" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CADIR}~")
-    TMPDIR=$(grep -E "^new_certs_dir" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CADIR}~")
-    INDEX=$(grep -E "^database" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CADIR}~")
-    SERIAL=$(grep -E "^serial" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CADIR}~")
-    CRL=$(grep -E "^crl" "${CONFFILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CADIR}~")
+    CA_DIR=$(grep -E "^dir" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1)
+    CA_KEY=$(grep -E "^private_key" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CA_DIR}~")
+    CA_CERT=$(grep -E "^certificate" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CA_DIR}~")
+    OCSP_KEY="${CA_DIR}/ocsp.key"
+    OCSP_CERT="${CA_DIR}/ocsp.pem"
+    CRT_DIR=$(grep -E "^certs" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CA_DIR}~")
+    TMP_DIR=$(grep -E "^new_certs_dir" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CA_DIR}~")
+    INDEX_FILE=$(grep -E "^database" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CA_DIR}~")
+    SERIAL=$(grep -E "^serial" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CA_DIR}~")
+    CRL=$(grep -E "^crl" "${CONF_FILE}" | cut -d'=' -f2 | xargs -n1 | sed "s~\$dir~${CA_DIR}~")
 
     # directories for clients key, csr, crt
-    KEYDIR="${CADIR}/private"
-    CSRDIR="${CADIR}/requests"
-    PKCS12DIR="${CADIR}/pkcs12"
-    OVPNDIR="${CADIR}/openvpn"
+    KEY_DIR="${CA_DIR}/private"
+    CSR_DIR="${CA_DIR}/requests"
+    PKCS12_DIR="${CA_DIR}/pkcs12"
+    OVPN_DIR="${CA_DIR}/openvpn"
 
-    OPENSSL=$(command -v openssl)
-    TIMESTAMP=$(/bin/date +"%s")
+    KEY_LENGTH=2048
 
-    if ! getent passwd "${PKIUSER}" >/dev/null || ! getent group "${PKIUSER}" >/dev/null; then
-        error "You must create ${PKIUSER} user and group !"
+    OPENSSL_BIN=$(command -v openssl)
+    SUFFIX=$(/bin/date +"%s")
+
+    if ! getent passwd "${PKI_USER}" >/dev/null || ! getent group "${PKI_USER}" >/dev/null; then
+        error "You must create ${PKI_USER} user and group !"
     fi
 
-    if [ ! -e "${CONFFILE}" ]; then
-        error "${CONFFILE} is missing"
+    if [ ! -e "${CONF_FILE}" ]; then
+        error "${CONF_FILE} is missing"
     fi
 
-    mkdir -p "${CADIR}" "${CRTDIR}" "${KEYDIR}" "${CSRDIR}" "${PKCS12DIR}" "${OVPNDIR}" "${TMPDIR}"
+    mkdir -p "${CA_DIR}" "${CRT_DIR}" "${KEY_DIR}" "${CSR_DIR}" "${PKCS12_DIR}" "${OVPN_DIR}" "${TMP_DIR}"
 
     command=${1:-help}
 
@@ -667,10 +669,10 @@ main() {
     esac
 
     # fix right
-    chown -R "${PKIUSER}":"${PKIUSER}" "${CADIR}"
-    chmod 750 "${CADIR}" "${CRTDIR}" "${KEYDIR}" "${CSRDIR}" "${PKCS12DIR}" "${OVPNDIR}" "${TMPDIR}"
-    chmod 600 "${INDEX}"* "${SERIAL}"* "${CAKEY}" "${CRL}"
-    chmod 640 "${CACERT}"
+    chown -R "${PKI_USER}":"${PKI_USER}" "${CA_DIR}"
+    chmod 750 "${CA_DIR}" "${CRT_DIR}" "${KEY_DIR}" "${CSR_DIR}" "${PKCS12_DIR}" "${OVPN_DIR}" "${TMP_DIR}"
+    chmod 600 "${INDEX_FILE}"* "${SERIAL}"* "${CA_KEY}" "${CRL}"
+    chmod 640 "${CA_CERT}"
 }
 
 main "$@"

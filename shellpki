@@ -3,6 +3,8 @@
 # shellpki is a wrapper around OpenSSL to manage a small PKI
 #
 
+set -u
+
 VERSION="1.0.0"
 
 show_version() {
@@ -225,7 +227,7 @@ ask_ca_password() {
     if [ "${attempt}" -ge "${max_attempts}" ]; then
         error "Maximum number of attempts reached (${max_attempts})."
     fi
-    if [ -z "${CA_PASSWORD}" ]; then
+    if [ -z "${CA_PASSWORD:-}" ]; then
         if [ "${non_interactive}" -eq 1 ]; then
             error "In non-interactive mode, you must pass CA_PASSWORD as environment variable"
         fi
@@ -235,7 +237,7 @@ ask_ca_password() {
         stty echo
         printf "\n"
     fi
-    if [ -z "${CA_PASSWORD}" ] || ! verify_ca_password; then
+    if [ -z "${CA_PASSWORD:-}" ] || ! verify_ca_password; then
         unset CA_PASSWORD
         attempt=$(( attempt + 1 ))
         ask_ca_password "${attempt}"
@@ -259,6 +261,8 @@ create() {
     from_csr=0
     ask_pass=0
     non_interactive=0
+    days=""
+    end_date=""
 
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a

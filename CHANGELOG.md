@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * verify_ca_password() looks for a previously set password and verifies it
 * Extract cert_end_date() function
 * Extract is_user() and is_group() functions
+* Extract ask_user_password() function
 * Extract variables for files
 * Use inline pass phrase arguments
 

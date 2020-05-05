@@ -214,7 +214,7 @@ ask_ca_password() {
     fi
     if [ -z "${CA_PASSWORD}" ]; then
         stty -echo
-        printf "Password for CA key : "
+        printf "Password for CA key: "
         read -r CA_PASSWORD
         stty echo
         printf "\n"
@@ -223,6 +223,19 @@ ask_ca_password() {
         unset CA_PASSWORD
         attempt=$(( attempt + 1 ))
         ask_ca_password "${attempt}"
+    fi
+}
+ask_user_password() {
+    trap 'unset PASSWORD' 0
+
+    stty -echo
+    printf "Password for user key: "
+    read -r PASSWORD
+    stty echo
+    printf "\n"
+
+    if [ -z "${PASSWORD}" ]; then
+        warning "Warning: empty password from input"
     fi
 }
 
@@ -435,16 +448,7 @@ create() {
         ask_ca_password 0
 
         if [ "${ask_pass}" -eq 1 ]; then
-            trap 'unset PASSWORD' 0
-            stty -echo
-            printf "Password for user key : "
-            read -r PASSWORD
-            stty echo
-            printf "\n"
-
-            if [ -z "${PASSWORD}" ]; then
-                warning "Warning: empty password from input"
-            fi
+            ask_user_password
         fi
 
         # generate private key

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Extract cert_end_date() function
 * Extract is_user() and is_group() functions
 * Extract variables for files
+* Use inline pass phrase arguments
 
 ### Deprecated
 

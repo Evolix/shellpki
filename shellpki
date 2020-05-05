@@ -73,14 +73,14 @@ init() {
     fi
 
     if [ ! -f "${CA_CERT}" ]; then
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" req \
+        "${OPENSSL_BIN}" req \
             -new \
             -batch \
             -sha512 \
             -x509 \
             -days 3650 \
             -extensions v3_ca \
-            -passin env:CA_PASSWORD \
+            -passin pass:${CA_PASSWORD} \
             -key "${CA_KEY}" \
             -out "${CA_CERT}" \
             -config /dev/stdin <<EOF
@@ -127,11 +127,11 @@ EOF
     fi
 
     if [ ! -f "${OCSP_CERT}" ]; then
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+        "${OPENSSL_BIN}" ca \
             -extensions v3_ocsp \
             -in "${ocsp_csr_file}" \
             -out "${OCSP_CERT}" \
-            -passin env:CA_PASSWORD \
+            -passin pass:${CA_PASSWORD} \
             -config "${CONF_FILE}"
     fi
 
@@ -191,9 +191,9 @@ warning() {
 }
 
 verify_ca_password() {
-    CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" rsa \
+    "${OPENSSL_BIN}" rsa \
         -in "${CA_KEY}"    \
-        -passin env:CA_PASSWORD \
+        -passin pass:${CA_PASSWORD} \
         >/dev/null 2>&1
 }
 
@@ -400,10 +400,10 @@ create() {
         fi
 
         # ca sign and generate cert
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+        "${OPENSSL_BIN}" ca \
             -config "${CONF_FILE}" \
             -in "${csr_file}" \
-            -passin env:CA_PASSWORD \
+            -passin pass:${CA_PASSWORD} \
             -out "${crt_file}" \
             ${crt_expiration_arg}
 
@@ -448,30 +448,25 @@ create() {
         fi
 
         # generate private key
-        OPENSSL_ENV=""
         PASS_ARGS=""
         if [ -n "${password_file}" ]; then
             PASS_ARGS="-aes256 -passout file:${password_file}"
         elif [ -n "${PASSWORD}" ]; then
-            OPENSSL_ENV="PASSWORD=${PASSWORD}"
-            PASS_ARGS="-aes256 -passout env:PASSWORD"
+            PASS_ARGS="-aes256 -passout pass:${PASSWORD}"
         fi
-        "${OPENSSL_ENV}" "${OPENSSL_BIN}" genrsa \
+        "${OPENSSL_BIN}" genrsa \
             -out "${key_file}" \
             ${PASS_ARGS} \
-            ${KEY_LENGTH} \
-            >/dev/null 2>&1
+            ${KEY_LENGTH}
 
         # generate csr req
-        OPENSSL_ENV=""
         PASS_ARGS=""
         if [ -n "${password_file}" ]; then
             PASS_ARGS="-passin file:${password_file}"
         elif [ -n "${PASSWORD}" ]; then
-            OPENSSL_ENV="PASSWORD=${PASSWORD}"
-            PASS_ARGS="-passin env:PASSWORD"
+            PASS_ARGS="-passin pass:${PASSWORD}"
         fi
-        "${OPENSSL_ENV}" "${OPENSSL_BIN}" req \
+        "${OPENSSL_BIN}" req \
             -batch \
             -new \
             -key "${key_file}" \
@@ -483,9 +478,9 @@ commonName_default = ${cn}
 EOF
 
         # ca sign and generate cert
-        CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+        "${OPENSSL_BIN}" ca \
             -config "${CONF_FILE}" \
-            -passin env:CA_PASSWORD \
+            -passin pass:${CA_PASSWORD} \
             -in "${csr_file}" \
             -out "${crt_file}" \
             ${crt_expiration_arg}
@@ -508,23 +503,32 @@ EOF
         echo "The CRT file is available in ${crt_file}"
 
         # generate pkcs12 format
-        OPENSSL_ENV=""
         PASS_ARGS=""
         if [ -n "${password_file}" ]; then
-            PASS_ARGS="-passin file:${password_file} -passout file:${password_file}"
+            # Hack for pkcs12 :
+            # If passin and passout files are the same path, it expects 2 lines
+            # so we make a temporary copy of the password file
+            password_file_out=$(mktemp)
+            cp "${password_file}" "${password_file_out}"
+            PASS_ARGS="-passin file:${password_file} -passout file:${password_file_out}"
         elif [ -n "${PASSWORD}" ]; then
-            OPENSSL_ENV="PASSWORD=${PASSWORD}"
-            PASS_ARGS="-passin env:PASSWORD -passout env:PASSWORD"
+            PASS_ARGS="-passin pass:${PASSWORD} -passout pass:${PASSWORD}"
         else
             PASS_ARGS="-passout pass:"
         fi
-        "${OPENSSL_ENV}" "${OPENSSL_BIN}" pkcs12 \
+        "${OPENSSL_BIN}" pkcs12 \
             -export \
             -nodes \
             -inkey "${key_file}" \
             -in "${crt_file}" \
-            -out "${pkcs12_file}"
+            -out "${pkcs12_file}" \
             ${PASS_ARGS}
+
+        if [ -n "${password_file_out}" ]; then
+            # Hack for pkcs12 :
+            # Destroy the temporary file
+            rm -f "${password_file_out}"
+        fi
 
         chmod 640 "${pkcs12_file}"
         echo "The PKCS12 config file is available in ${pkcs12_file}"
@@ -579,17 +583,17 @@ revoke() {
     ask_ca_password 0
 
     echo "Revoke certificate ${crt_file} :"
-    CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+    "${OPENSSL_BIN}" ca \
         -config "${CONF_FILE}" \
-        -passin env:CA_PASSWORD \
+        -passin pass:${CA_PASSWORD} \
         -revoke "${crt_file}"
     if [ "$?" -eq 0 ]; then
         rm "${crt_file}"
     fi
 
-    CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
+    "${OPENSSL_BIN}" ca \
         -config "${CONF_FILE}" \
-        -passin env:CA_PASSWORD \
+        -passin pass:${CA_PASSWORD} \
         -gencrl \
         -out "${CRL}"
 }

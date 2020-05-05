@@ -630,6 +630,33 @@ EOF
             chmod 640 "${ovpn_file}"
             echo "The OpenVPN config file is available at \`${ovpn_file}'"
         fi
+
+        # Copy files if destination exists
+        if [ -d "${COPY_DIR}" ]; then
+            for file in "${crt_file}" "${key_file}" "${pkcs12_file}" "${ovpn_file}"; do
+                if [ -f "${file}" ]; then
+                    new_file="${COPY_DIR}/$(basename "${file}")"
+                    if [ "${replace_existing}" -eq 1 ]; then
+                        cp -f "${file}" "${COPY_DIR}/"
+                    else
+                        if [ "${non_interactive}" -eq 1 ]; then
+                            if [ -f "${new_file}" ]; then
+                                echo "File \`${file}' has not been copied to \`${new_file}', it already exists" >&2
+                                continue
+                            else
+                                cp "${file}" "${COPY_DIR}/"
+                            fi
+                        else
+                            cp -i "${file}" "${COPY_DIR}/"
+                        fi
+                    fi
+                    echo "File \`${file}' has been copied to \`${new_file}'"
+                fi
+            done
+
+            chown -R ${PKI_USER}:${PKI_USER} "${COPY_DIR}/"
+            chmod -R u=rwX,g=rwX,o= "${COPY_DIR}/"
+        fi
     fi
 }
 
@@ -789,6 +816,8 @@ main() {
     CSR_DIR="${CA_DIR}/requests"
     PKCS12_DIR="${CA_DIR}/pkcs12"
     OVPN_DIR="${CA_DIR}/openvpn"
+
+    COPY_DIR="$(dirname "${CONF_FILE}")/copy_output"
 
     CA_KEY_LENGTH=4096
     if [ "${CA_KEY_LENGTH}" -lt 4096 ]; then

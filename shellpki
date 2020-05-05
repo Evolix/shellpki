@@ -212,7 +212,7 @@ verify_ca_password() {
 
 ask_ca_password() {
     attempt=${1:-0}
-    max_attempt=3
+    max_attempts=3
 
     trap 'unset CA_PASSWORD' 0
 
@@ -222,8 +222,8 @@ ask_ca_password() {
     if [ "${attempt}" -gt 0 ]; then
         warning "Invalid password, retry."
     fi
-    if [ "${attempt}" -ge "${max_attempt}" ]; then
-        error "Maximum number of attempts reached (${max_attempt})."
+    if [ "${attempt}" -ge "${max_attempts}" ]; then
+        error "Maximum number of attempts reached (${max_attempts})."
     fi
     if [ -z "${CA_PASSWORD}" ]; then
         stty -echo

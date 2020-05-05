@@ -523,7 +523,9 @@ create() {
             ${pass_args} \
             ${KEY_LENGTH} \
             >/dev/null 2>&1
-        if [ "$?" -ne 0 ]; then
+        if [ "$?" -eq 0 ]; then
+            echo "The KEY file is available at \`${key_file}'"
+        else
             error "Error generating the private key"
         fi
 

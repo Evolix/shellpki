@@ -487,7 +487,6 @@ create() {
         else
             echo "The certificate file is available at \`${crt_file}'"
         fi
-
     else
         if [ -z "${cn}" ]; then
             show_usage >&2

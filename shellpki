@@ -251,7 +251,7 @@ create() {
                 # csr-file option, with value separated by space
                 if [ -n "$2" ]; then
                     from_csr=1
-                    csr_file=$(readlink -f -- "${2}")
+                    csr_file=$(readlink --canonicalize --verbose -- "${2}")
                     shift
                 else
                     printf 'ERROR: "--csr-file" requires a non-empty option argument.\n' >&2
@@ -261,7 +261,7 @@ create() {
             --file=?*|--csr-file=?*)
                 from_csr=1
                 # csr-file option, with value separated by =
-                csr_file=$(readlink -f -- "${1#*=}")
+                csr_file=$(readlink --canonicalize --verbose -- "${1#*=}")
                 ;;
             --file=|--csr-file=)
                 # csr-file options, without value
@@ -274,7 +274,7 @@ create() {
             --password-file)
                 # password-file option, with value separated by space
                 if [ -n "$2" ]; then
-                    password_file=$(readlink -f -- "${2}")
+                    password_file=$(readlink --canonicalize --verbose -- "${2}")
                     shift
                 else
                     printf 'ERROR: "--password-file" requires a non-empty option argument.\n' >&2
@@ -283,7 +283,7 @@ create() {
                 ;;
             --password-file=?*)
                 # password-file option, with value separated by =
-                password_file=$(readlink -f -- "${1#*=}")
+                password_file=$(readlink --canonicalize --verbose -- "${1#*=}")
                 ;;
             --password-file=)
                 # password-file options, without value

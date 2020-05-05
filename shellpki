@@ -226,6 +226,9 @@ ask_ca_password() {
         error "Maximum number of attempts reached (${max_attempts})."
     fi
     if [ -z "${CA_PASSWORD}" ]; then
+        if [ "${non_interactive}" -eq 1 ]; then
+            error "In non-interactive mode, you must pass CA_PASSWORD as environment variable"
+        fi
         stty -echo
         printf "Password for CA key: "
         read -r CA_PASSWORD
@@ -255,6 +258,7 @@ ask_user_password() {
 create() {
     from_csr=0
     ask_pass=0
+    non_interactive=0
 
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
@@ -353,6 +357,9 @@ create() {
                 printf 'ERROR: "--end-date" requires a non-empty option argument.\n' >&2
                 exit 1
                 ;;
+            --non-interactive)
+                non_interactive=1
+                ;;
             --)
                 # End of all options.
                 shift
@@ -386,6 +393,11 @@ create() {
         else
             crt_expiration_arg="-enddate ${cert_end_date}"
         fi
+    fi
+    if [ "${non_interactive}" -eq 1 ]; then
+        batch_arg="-batch"
+    else
+        batch_arg=""
     fi
 
     if [ "${from_csr}" -eq 1 ]; then
@@ -438,7 +450,13 @@ create() {
         fi
 
         # ca sign and generate cert
+        if [ "${non_interactive}" -eq 1 ]; then
+            batch_arg="-batch"
+        else
+            batch_arg=""
+        fi
         "${OPENSSL_BIN}" ca \
+            ${batch_arg} \
             -config "${CONF_FILE}" \
             -in "${csr_file}" \
             -passin pass:${CA_PASSWORD} \
@@ -519,6 +537,7 @@ EOF
 
         # ca sign and generate cert
         "${OPENSSL_BIN}" ca \
+            ${batch_arg} \
             -config "${CONF_FILE}" \
             -passin pass:${CA_PASSWORD} \
             -in "${csr_file}" \

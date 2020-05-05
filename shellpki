@@ -3,8 +3,6 @@
 # shellpki is a wrapper around OpenSSL to manage a small PKI
 #
 
-set -e
-
 VERSION="1.0.0"
 
 show_version() {
@@ -57,6 +55,9 @@ init() {
             -out "${CA_KEY}" \
             -aes256 ${CA_KEY_LENGTH} \
             >/dev/null 2>&1
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the CA key: $?"
+        fi
     fi
 
     if [ -f "${CA_CERT}" ]; then
@@ -87,6 +88,9 @@ init() {
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the CA certificate: $?"
+        fi
     fi
 }
 
@@ -108,6 +112,9 @@ ocsp() {
             -out "${OCSP_KEY}" \
             ${KEY_LENGTH} \
             >/dev/null 2>&1
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the OCSP key: $?"
+        fi
     fi
 
     "${OPENSSL_BIN}" req \
@@ -121,6 +128,9 @@ commonName_default = ${url}
 [ usr_cert ]
 authorityInfoAccess = OCSP;URI:http://${ocsp_uri}
 EOF
+    if [ "$?" -ne 0 ]; then
+        error "Error generating the OCSP request: $?"
+    fi
 
     if [ ! -f "${OCSP_CERT}" ]; then
         ask_ca_password 0
@@ -133,6 +143,9 @@ EOF
             -out "${OCSP_CERT}" \
             -passin pass:${CA_PASSWORD} \
             -config "${CONF_FILE}"
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the OCSP certificate: $?"
+        fi
     fi
 
     exec "${OPENSSL_BIN}" ocsp \
@@ -419,8 +432,12 @@ create() {
             -passin pass:${CA_PASSWORD} \
             -out "${crt_file}" \
             ${crt_expiration_arg}
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the certificate: $?"
+        else
+            echo "The certificate file is available at \`${crt_file}'"
+        fi
 
-        echo "The CRT file is available in ${crt_file}"
     else
         if [ -z "${cn}" ]; then
             show_usage >&2
@@ -463,6 +480,9 @@ create() {
             ${PASS_ARGS} \
             ${KEY_LENGTH} \
             >/dev/null 2>&1
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the private key: $?"
+        fi
 
         # generate csr req
         PASS_ARGS=""
@@ -481,6 +501,9 @@ create() {
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the CSR: $?"
+        fi
 
         # ca sign and generate cert
         "${OPENSSL_BIN}" ca \
@@ -489,6 +512,9 @@ EOF
             -in "${csr_file}" \
             -out "${crt_file}" \
             ${crt_expiration_arg}
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the certificate: $?"
+        fi
 
         # check if CRT is a valid
         "${OPENSSL_BIN}" x509 \
@@ -528,6 +554,9 @@ EOF
             -in "${crt_file}" \
             -out "${pkcs12_file}" \
             ${PASS_ARGS}
+        if [ "$?" -ne 0 ]; then
+            error "Error generating the pkcs12 file: $?"
+        fi
 
         if [ -n "${password_file_out}" ]; then
             # Hack for pkcs12 :
@@ -536,7 +565,7 @@ EOF
         fi
 
         chmod 640 "${pkcs12_file}"
-        echo "The PKCS12 config file is available in ${pkcs12_file}"
+        echo "The PKCS12 config file is available at \`${pkcs12_file}'"
 
         # generate openvpn format
         if [ -e "${CA_DIR}/ovpn.conf" ]; then
@@ -554,7 +583,7 @@ $(cat "${key_file}")
 </key>
 EOF
             chmod 640 "${ovpn_file}"
-            echo "The OpenVPN config file is available in ${ovpn_file}"
+            echo "The OpenVPN config file is available at \`${ovpn_file}'"
         fi
     fi
 }

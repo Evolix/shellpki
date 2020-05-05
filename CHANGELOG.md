@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Extract ask_user_password() function
 * Extract variables for files
 * Use inline pass phrase arguments
+* Remove "set -e" and add many return code checks
 
 ### Deprecated
 

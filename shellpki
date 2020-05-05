@@ -246,21 +246,48 @@ ask_ca_password() {
 ask_user_password() {
     trap 'unset PASSWORD' 0
 
-    stty -echo
-    printf "Password for user key: "
-    read -r PASSWORD
-    stty echo
-    printf "\n"
-
-    if [ -z "${PASSWORD}" ]; then
+    if [ -z "${PASSWORD:-}" ]; then
+        if [ "${non_interactive}" -eq 1 ]; then
+            error "In non-interactive mode, you must pass PASSWORD as environment variable or use --password-file"
+        fi
+        stty -echo
+        printf "Password for user key: "
+        read -r PASSWORD
+        stty echo
+        printf "\n"
+    fi
+    if [ -z "${PASSWORD:-}" ]; then
         warning "Warning: empty password from input"
     fi
 }
-
+revoke_existing_or_abort() {
+    cn=${1:?}
+    if [ "${non_interactive}" -eq 1 ]; then
+        if [ "${revoke_existing}" -eq 1 ]; then
+            resp="y"
+        else
+            error "${cn} already exists, use \`--revoke-existing' to force"
+        fi
+    else
+        if [ "${revoke_existing}" -eq 1 ]; then
+            resp="y"
+        else
+            printf "%s already exists, do you want to revoke and recreate it ? [y/N] " "${cn}"
+            read -r REPLY
+            resp=$(echo "${REPLY}" | tr 'Y' 'y')
+        fi
+    fi
+    if [ "${resp}" = "y" ]; then
+        revoke "${cn}"
+    else
+        error "Aborted"
+    fi
+}
 create() {
     from_csr=0
     ask_pass=0
     non_interactive=0
+    revoke_existing=0
     days=""
     end_date=""
 
@@ -356,6 +383,9 @@ create() {
             --non-interactive)
                 non_interactive=1
                 ;;
+            --revoke-existing)
+                revoke_existing=1
+                ;;
             --)
                 # End of all options.
                 shift
@@ -434,15 +464,8 @@ create() {
         cn=$("${OPENSSL_BIN}" req -noout -subject -in "${csr_file}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs)
 
         # check if CN already exist
-        if [ -f "${CRT_DIR}/${cn}.crt" ]; then
-            printf "%s already exists, do you revoke and recreate it ? [y/N] " "${cn}"
-            read -r REPLY
-            resp=$(echo "${REPLY}" | tr 'Y' 'y')
-            if [ "${resp}" = "y" ]; then
-                revoke "${cn}"
-            else
-                error "Abort"
-            fi
+        if [ -f "${crt_file}" ]; then
+            revoke_existing_or_abort "${cn}"
         fi
 
         # ca sign and generate cert
@@ -477,14 +500,7 @@ create() {
 
         # check if CN already exist
         if [ -f "${crt_file}" ]; then
-            printf "%s already exists, do you revoke and recreate it ? [y/N] " "${cn}"
-            read -r REPLY
-            resp=$(echo "${REPLY}" | tr 'Y' 'y')
-            if [ "${resp}" = "y" ]; then
-                revoke "${cn}"
-            else
-                error "Abort"
-            fi
+            revoke_existing_or_abort "${cn}"
         fi
 
         # ask for CA passphrase

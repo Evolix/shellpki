@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Accept `--days` and `--end-date` command line options
 * CA key length is configurable (minimum 4096)
 * Add `--non-interactive` command line option
+* Add `--revoke-existing` command line option
 
 ### Changed
 

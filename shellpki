@@ -461,7 +461,8 @@ create() {
         "${OPENSSL_BIN}" genrsa \
             -out "${key_file}" \
             ${PASS_ARGS} \
-            ${KEY_LENGTH}
+            ${KEY_LENGTH} \
+            >/dev/null 2>&1
 
         # generate csr req
         PASS_ARGS=""

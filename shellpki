@@ -56,7 +56,7 @@ init() {
             -aes256 ${CA_KEY_LENGTH} \
             >/dev/null 2>&1
         if [ "$?" -ne 0 ]; then
-            error "Error generating the CA key: $?"
+            error "Error generating the CA key"
         fi
     fi
 
@@ -89,7 +89,7 @@ $(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
         if [ "$?" -ne 0 ]; then
-            error "Error generating the CA certificate: $?"
+            error "Error generating the CA certificate"
         fi
     fi
 }
@@ -113,7 +113,7 @@ ocsp() {
             ${KEY_LENGTH} \
             >/dev/null 2>&1
         if [ "$?" -ne 0 ]; then
-            error "Error generating the OCSP key: $?"
+            error "Error generating the OCSP key"
         fi
     fi
 
@@ -129,7 +129,7 @@ commonName_default = ${url}
 authorityInfoAccess = OCSP;URI:http://${ocsp_uri}
 EOF
     if [ "$?" -ne 0 ]; then
-        error "Error generating the OCSP request: $?"
+        error "Error generating the OCSP request"
     fi
 
     if [ ! -f "${OCSP_CERT}" ]; then
@@ -144,7 +144,7 @@ EOF
             -passin pass:${CA_PASSWORD} \
             -config "${CONF_FILE}"
         if [ "$?" -ne 0 ]; then
-            error "Error generating the OCSP certificate: $?"
+            error "Error generating the OCSP certificate"
         fi
     fi
 
@@ -264,7 +264,10 @@ create() {
                 # csr-file option, with value separated by space
                 if [ -n "$2" ]; then
                     from_csr=1
-                    csr_file=$(readlink --canonicalize --verbose -- "${2}")
+                    csr_file=$(readlink --canonicalize -- "${2}")
+                    if [ "$?" -ne 0 ]; then
+                        error "Error accessing file \`${2}'"
+                    fi
                     shift
                 else
                     printf 'ERROR: "--csr-file" requires a non-empty option argument.\n' >&2
@@ -274,7 +277,10 @@ create() {
             --file=?*|--csr-file=?*)
                 from_csr=1
                 # csr-file option, with value separated by =
-                csr_file=$(readlink --canonicalize --verbose -- "${1#*=}")
+                csr_file=$(readlink --canonicalize -- "${1#*=}")
+                if [ "$?" -ne 0 ]; then
+                    error "Error accessing file \`${1#*=}'"
+                fi
                 ;;
             --file=|--csr-file=)
                 # csr-file options, without value
@@ -287,7 +293,10 @@ create() {
             --password-file)
                 # password-file option, with value separated by space
                 if [ -n "$2" ]; then
-                    password_file=$(readlink --canonicalize --verbose -- "${2}")
+                    password_file=$(readlink --canonicalize -- "${2}")
+                    if [ "$?" -ne 0 ]; then
+                        error "Error accessing file \`${2}'"
+                    fi
                     shift
                 else
                     printf 'ERROR: "--password-file" requires a non-empty option argument.\n' >&2
@@ -296,7 +305,10 @@ create() {
                 ;;
             --password-file=?*)
                 # password-file option, with value separated by =
-                password_file=$(readlink --canonicalize --verbose -- "${1#*=}")
+                password_file=$(readlink --canonicalize -- "${1#*=}")
+                if [ "$?" -ne 0 ]; then
+                    error "Error accessing file \`${1#*=}'"
+                fi
                 ;;
             --password-file=)
                 # password-file options, without value
@@ -433,7 +445,7 @@ create() {
             -out "${crt_file}" \
             ${crt_expiration_arg}
         if [ "$?" -ne 0 ]; then
-            error "Error generating the certificate: $?"
+            error "Error generating the certificate"
         else
             echo "The certificate file is available at \`${crt_file}'"
         fi
@@ -481,7 +493,7 @@ create() {
             ${KEY_LENGTH} \
             >/dev/null 2>&1
         if [ "$?" -ne 0 ]; then
-            error "Error generating the private key: $?"
+            error "Error generating the private key"
         fi
 
         # generate csr req
@@ -502,7 +514,7 @@ $(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
         if [ "$?" -ne 0 ]; then
-            error "Error generating the CSR: $?"
+            error "Error generating the CSR"
         fi
 
         # ca sign and generate cert
@@ -513,7 +525,7 @@ EOF
             -out "${crt_file}" \
             ${crt_expiration_arg}
         if [ "$?" -ne 0 ]; then
-            error "Error generating the certificate: $?"
+            error "Error generating the certificate"
         fi
 
         # check if CRT is a valid
@@ -555,7 +567,7 @@ EOF
             -out "${pkcs12_file}" \
             ${PASS_ARGS}
         if [ "$?" -ne 0 ]; then
-            error "Error generating the pkcs12 file: $?"
+            error "Error generating the pkcs12 file"
         fi
 
         if [ -n "${password_file_out}" ]; then

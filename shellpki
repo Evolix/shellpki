@@ -80,9 +80,9 @@ init() {
             -x509 \
             -days 3650 \
             -extensions v3_ca \
+            -passin env:CA_PASSWORD \
             -key "${CA_KEY}" \
             -out "${CA_CERT}" \
-            -passin env:CA_PASSWORD \
             -config /dev/stdin <<EOF
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
@@ -434,12 +434,7 @@ create() {
         # ask for CA passphrase
         ask_ca_password 0
 
-        if [ -n "${password_file}" ] && [ -r "${password_file}" ]; then
-            PASSWORD=$(head -n 1 "${password_file}" | tr -d '\n')
-            if [ -z "${PASSWORD}" ]; then
-                warning "Warning: empty password from file \`${password_file}'"
-            fi
-        elif [ "${ask_pass}" -eq 1 ]; then
+        if [ "${ask_pass}" -eq 1 ]; then
             trap 'unset PASSWORD' 0
             stty -echo
             printf "Password for user key : "
@@ -453,7 +448,14 @@ create() {
         fi
 
         # generate private key
-        if [ -n "${PASSWORD}" ]; then
+        if [ -n "${password_file}" ]; then
+            "${OPENSSL_BIN}" genrsa \
+                -aes256 \
+                -passout file:${password_file} \
+                -out "${key_file}" \
+                ${KEY_LENGTH} \
+                >/dev/null 2>&1
+        elif [ -n "${PASSWORD}" ]; then
             PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" genrsa \
                 -aes256 \
                 -passout env:PASSWORD \
@@ -467,7 +469,19 @@ create() {
                 >/dev/null 2>&1
         fi
 
-        if [ -n "${PASSWORD}" ]; then
+        if [ -n "${password_file}" ]; then
+            # generate csr req
+            "${OPENSSL_BIN}" req \
+                -batch \
+                -new \
+                -key "${key_file}" \
+                -passin file:${password_file} \
+                -out "${csr_file}" \
+                -config /dev/stdin <<EOF
+$(cat "${CONF_FILE}")
+commonName_default = ${cn}
+EOF
+        elif [ -n "${PASSWORD}" ]; then
             # generate csr req
             PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" req \
                 -batch \
@@ -518,22 +532,32 @@ EOF
         echo "The CRT file is available in ${crt_file}"
 
         # generate pkcs12 format
-        if [ -n "${PASSWORD}" ]; then
+
+        if [ -n "${password_file}" ]; then
+            "${OPENSSL_BIN}" pkcs12 \
+                -export \
+                -nodes \
+                -passin file:${password_file} \
+                -inkey "${key_file}" \
+                -in "${crt_file}" \
+                -passout file:${password_file} \
+                -out "${pkcs12_file}"
+        elif [ -n "${PASSWORD}" ]; then
             PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" pkcs12 \
                 -export \
                 -nodes \
                 -passin env:PASSWORD \
-                -passout env:PASSWORD \
                 -inkey "${key_file}" \
                 -in "${crt_file}" \
+                -passout env:PASSWORD \
                 -out "${pkcs12_file}"
         else
              "${OPENSSL_BIN}" pkcs12 \
                  -export \
                  -nodes \
-                 -passout pass: \
                  -inkey "${key_file}" \
                  -in "${crt_file}" \
+                 -passout pass: \
                  -out "${pkcs12_file}"
         fi
 

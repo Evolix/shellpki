@@ -55,7 +55,8 @@ init() {
     if [ ! -f "${CA_KEY}" ]; then
         "${OPENSSL_BIN}" genrsa \
             -out "${CA_KEY}" \
-            -aes256 ${CA_KEY_LENGTH} \
+            -aes256 \
+            ${CA_KEY_LENGTH} \
             >/dev/null 2>&1
         if [ "$?" -ne 0 ]; then
             error "Error generating the CA key"

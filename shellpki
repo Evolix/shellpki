@@ -278,8 +278,7 @@ create() {
                     fi
                     shift
                 else
-                    printf 'ERROR: "--csr-file" requires a non-empty option argument.\n' >&2
-                    exit 1
+                    error "Argument error: \`--csr-file' requires a value"
                 fi
                 ;;
             --file=?*|--csr-file=?*)
@@ -292,8 +291,7 @@ create() {
                 ;;
             --file=|--csr-file=)
                 # csr-file options, without value
-                printf 'ERROR: "--csr-file" requires a non-empty option argument.\n' >&2
-                exit 1
+                error "Argument error: \`--csr-file' requires a value"
                 ;;
             -p|--password)
                 ask_pass=1
@@ -307,8 +305,7 @@ create() {
                     fi
                     shift
                 else
-                    printf 'ERROR: "--password-file" requires a non-empty option argument.\n' >&2
-                    exit 1
+                    error "Argument error: \`--password-file' requires a value"
                 fi
                 ;;
             --password-file=?*)
@@ -320,8 +317,7 @@ create() {
                 ;;
             --password-file=)
                 # password-file options, without value
-                printf 'ERROR: "--password-file" requires a non-empty option argument.\n' >&2
-                exit 1
+                error "Argument error: \`--password-file' requires a value"
                 ;;
             --days)
                 # days option, with value separated by space
@@ -329,8 +325,7 @@ create() {
                     days=${2}
                     shift
                 else
-                    printf 'ERROR: "--days" requires a non-empty option argument.\n' >&2
-                    exit 1
+                    error "Argument error: \`--days' requires a value"
                 fi
                 ;;
             --days=?*)
@@ -339,8 +334,7 @@ create() {
                 ;;
             --days=)
                 # days options, without value
-                printf 'ERROR: "--days" requires a non-empty option argument.\n' >&2
-                exit 1
+                error "Argument error: \`--days' requires a value"
                 ;;
             --end-date)
                 # end-date option, with value separated by space
@@ -348,8 +342,7 @@ create() {
                     end_date=${2}
                     shift
                 else
-                    printf 'ERROR: "--end-date" requires a non-empty option argument.\n' >&2
-                    exit 1
+                    error "Argument error: \`--end-date' requires a value"
                 fi
                 ;;
             --end-date=?*)
@@ -358,8 +351,7 @@ create() {
                 ;;
             --end-date=)
                 # end-date options, without value
-                printf 'ERROR: "--end-date" requires a non-empty option argument.\n' >&2
-                exit 1
+                error "Argument error: \`--end-date' requires a value"
                 ;;
             --non-interactive)
                 non_interactive=1
@@ -371,7 +363,7 @@ create() {
                 ;;
             -?*)
                 # ignore unknown options
-                printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+                warning "Warning: unknown option (ignored): \`$1'"
                 ;;
             *)
                 # Default case: If no more options then break out of the loop.

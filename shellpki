@@ -503,15 +503,15 @@ create() {
         fi
 
         # generate private key
-        PASS_ARGS=""
+        pass_args=""
         if [ -n "${password_file}" ]; then
-            PASS_ARGS="-aes256 -passout file:${password_file}"
+            pass_args="-aes256 -passout file:${password_file}"
         elif [ -n "${PASSWORD}" ]; then
-            PASS_ARGS="-aes256 -passout pass:${PASSWORD}"
+            pass_args="-aes256 -passout pass:${PASSWORD}"
         fi
         "${OPENSSL_BIN}" genrsa \
             -out "${key_file}" \
-            ${PASS_ARGS} \
+            ${pass_args} \
             ${KEY_LENGTH} \
             >/dev/null 2>&1
         if [ "$?" -ne 0 ]; then
@@ -519,18 +519,18 @@ create() {
         fi
 
         # generate csr req
-        PASS_ARGS=""
+        pass_args=""
         if [ -n "${password_file}" ]; then
-            PASS_ARGS="-passin file:${password_file}"
+            pass_args="-passin file:${password_file}"
         elif [ -n "${PASSWORD}" ]; then
-            PASS_ARGS="-passin pass:${PASSWORD}"
+            pass_args="-passin pass:${PASSWORD}"
         fi
         "${OPENSSL_BIN}" req \
             -batch \
             -new \
             -key "${key_file}" \
             -out "${csr_file}" \
-            ${PASS_ARGS} \
+            ${pass_args} \
             -config /dev/stdin <<EOF
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
@@ -569,18 +569,18 @@ EOF
         echo "The CRT file is available in ${crt_file}"
 
         # generate pkcs12 format
-        PASS_ARGS=""
+        pass_args=""
         if [ -n "${password_file}" ]; then
             # Hack for pkcs12 :
             # If passin and passout files are the same path, it expects 2 lines
             # so we make a temporary copy of the password file
             password_file_out=$(mktemp)
             cp "${password_file}" "${password_file_out}"
-            PASS_ARGS="-passin file:${password_file} -passout file:${password_file_out}"
+            pass_args="-passin file:${password_file} -passout file:${password_file_out}"
         elif [ -n "${PASSWORD}" ]; then
-            PASS_ARGS="-passin pass:${PASSWORD} -passout pass:${PASSWORD}"
+            pass_args="-passin pass:${PASSWORD} -passout pass:${PASSWORD}"
         else
-            PASS_ARGS="-passout pass:"
+            pass_args="-passout pass:"
         fi
         "${OPENSSL_BIN}" pkcs12 \
             -export \
@@ -588,7 +588,7 @@ EOF
             -inkey "${key_file}" \
             -in "${crt_file}" \
             -out "${pkcs12_file}" \
-            ${PASS_ARGS}
+            ${pass_args}
         if [ "$?" -ne 0 ]; then
             error "Error generating the pkcs12 file"
         fi

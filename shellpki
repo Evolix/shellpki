@@ -448,63 +448,39 @@ create() {
         fi
 
         # generate private key
+        OPENSSL_ENV=""
+        PASS_ARGS=""
         if [ -n "${password_file}" ]; then
-            "${OPENSSL_BIN}" genrsa \
-                -aes256 \
-                -passout file:${password_file} \
-                -out "${key_file}" \
-                ${KEY_LENGTH} \
-                >/dev/null 2>&1
+            PASS_ARGS="-aes256 -passout file:${password_file}"
         elif [ -n "${PASSWORD}" ]; then
-            PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" genrsa \
-                -aes256 \
-                -passout env:PASSWORD \
-                -out "${key_file}" \
-                ${KEY_LENGTH} \
-                >/dev/null 2>&1
-        else
-            "${OPENSSL_BIN}" genrsa \
-                -out "${key_file}" \
-                ${KEY_LENGTH} \
-                >/dev/null 2>&1
+            OPENSSL_ENV="PASSWORD=${PASSWORD}"
+            PASS_ARGS="-aes256 -passout env:PASSWORD"
         fi
+        "${OPENSSL_ENV}" "${OPENSSL_BIN}" genrsa \
+            -out "${key_file}" \
+            ${PASS_ARGS} \
+            ${KEY_LENGTH} \
+            >/dev/null 2>&1
 
+        # generate csr req
+        OPENSSL_ENV=""
+        PASS_ARGS=""
         if [ -n "${password_file}" ]; then
-            # generate csr req
-            "${OPENSSL_BIN}" req \
-                -batch \
-                -new \
-                -key "${key_file}" \
-                -passin file:${password_file} \
-                -out "${csr_file}" \
-                -config /dev/stdin <<EOF
-$(cat "${CONF_FILE}")
-commonName_default = ${cn}
-EOF
+            PASS_ARGS="-passin file:${password_file}"
         elif [ -n "${PASSWORD}" ]; then
-            # generate csr req
-            PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" req \
-                -batch \
-                -new \
-                -key "${key_file}" \
-                -passin env:PASSWORD \
-                -out "${csr_file}" \
-                -config /dev/stdin <<EOF
-$(cat "${CONF_FILE}")
-commonName_default = ${cn}
-EOF
-        else
-            # generate csr req
-            "${OPENSSL_BIN}" req \
-                -batch \
-                -new \
-                -key "${key_file}" \
-                -out "${csr_file}" \
-                -config /dev/stdin <<EOF
-$(cat "${CONF_FILE}")
-commonName_default = ${cn}
-EOF
+            OPENSSL_ENV="PASSWORD=${PASSWORD}"
+            PASS_ARGS="-passin env:PASSWORD"
         fi
+        "${OPENSSL_ENV}" "${OPENSSL_BIN}" req \
+            -batch \
+            -new \
+            -key "${key_file}" \
+            -out "${csr_file}" \
+            ${PASS_ARGS} \
+            -config /dev/stdin <<EOF
+$(cat "${CONF_FILE}")
+commonName_default = ${cn}
+EOF
 
         # ca sign and generate cert
         CA_PASSWORD="${CA_PASSWORD}" "${OPENSSL_BIN}" ca \
@@ -532,34 +508,23 @@ EOF
         echo "The CRT file is available in ${crt_file}"
 
         # generate pkcs12 format
-
+        OPENSSL_ENV=""
+        PASS_ARGS=""
         if [ -n "${password_file}" ]; then
-            "${OPENSSL_BIN}" pkcs12 \
-                -export \
-                -nodes \
-                -passin file:${password_file} \
-                -inkey "${key_file}" \
-                -in "${crt_file}" \
-                -passout file:${password_file} \
-                -out "${pkcs12_file}"
+            PASS_ARGS="-passin file:${password_file} -passout file:${password_file}"
         elif [ -n "${PASSWORD}" ]; then
-            PASSWORD="${PASSWORD}" "${OPENSSL_BIN}" pkcs12 \
-                -export \
-                -nodes \
-                -passin env:PASSWORD \
-                -inkey "${key_file}" \
-                -in "${crt_file}" \
-                -passout env:PASSWORD \
-                -out "${pkcs12_file}"
+            OPENSSL_ENV="PASSWORD=${PASSWORD}"
+            PASS_ARGS="-passin env:PASSWORD -passout env:PASSWORD"
         else
-             "${OPENSSL_BIN}" pkcs12 \
-                 -export \
-                 -nodes \
-                 -inkey "${key_file}" \
-                 -in "${crt_file}" \
-                 -passout pass: \
-                 -out "${pkcs12_file}"
+            PASS_ARGS="-passout pass:"
         fi
+        "${OPENSSL_ENV}" "${OPENSSL_BIN}" pkcs12 \
+            -export \
+            -nodes \
+            -inkey "${key_file}" \
+            -in "${crt_file}" \
+            -out "${pkcs12_file}"
+            ${PASS_ARGS}
 
         chmod 640 "${pkcs12_file}"
         echo "The PKCS12 config file is available in ${pkcs12_file}"

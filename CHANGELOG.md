@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `--non-interactive` command line option
 * Add `--replace-existing` command line option
 * Copy files if destination exists
+* `cert-expirations.sh` script to print out certificates expiration dates
 
 ### Changed
 

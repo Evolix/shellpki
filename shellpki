@@ -458,7 +458,7 @@ create() {
         if [ "${ask_pass}" -eq 1 ]; then
             warning "Warning: -p|--password is ignored with -f|--file|--crt-file"
         fi
-        if [ -n "${password_file}" ]; then
+        if [ -n "${password_file:-}" ]; then
             warning "Warning: --password-file is ignored with -f|--file|--crt-file"
         fi
 
@@ -539,9 +539,9 @@ create() {
 
         # generate private key
         pass_args=""
-        if [ -n "${password_file}" ]; then
+        if [ -n "${password_file:-}" ]; then
             pass_args="-aes256 -passout file:${password_file}"
-        elif [ -n "${PASSWORD}" ]; then
+        elif [ -n "${PASSWORD:-}" ]; then
             pass_args="-aes256 -passout pass:${PASSWORD}"
         fi
         "${OPENSSL_BIN}" genrsa \
@@ -557,9 +557,9 @@ create() {
 
         # generate csr req
         pass_args=""
-        if [ -n "${password_file}" ]; then
+        if [ -n "${password_file:-}" ]; then
             pass_args="-passin file:${password_file}"
-        elif [ -n "${PASSWORD}" ]; then
+        elif [ -n "${PASSWORD:-}" ]; then
             pass_args="-passin pass:${PASSWORD}"
         fi
         "${OPENSSL_BIN}" req \
@@ -607,14 +607,14 @@ EOF
 
         # generate pkcs12 format
         pass_args=""
-        if [ -n "${password_file}" ]; then
+        if [ -n "${password_file:-}" ]; then
             # Hack for pkcs12 :
             # If passin and passout files are the same path, it expects 2 lines
             # so we make a temporary copy of the password file
             password_file_out=$(mktemp)
             cp "${password_file}" "${password_file_out}"
             pass_args="-passin file:${password_file} -passout file:${password_file_out}"
-        elif [ -n "${PASSWORD}" ]; then
+        elif [ -n "${PASSWORD:-}" ]; then
             pass_args="-passin pass:${PASSWORD} -passout pass:${PASSWORD}"
         else
             pass_args="-passout pass:"
@@ -630,7 +630,7 @@ EOF
             error "Error generating the pkcs12 file"
         fi
 
-        if [ -n "${password_file_out}" ]; then
+        if [ -n "${password_file_out:-}" ]; then
             # Hack for pkcs12 :
             # Destroy the temporary file
             rm -f "${password_file_out}"

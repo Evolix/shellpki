@@ -215,7 +215,7 @@ Revoke a client cert with is commonName (CN) :
 
 List all actually valid commonName (CN) :
 
-    ${0} list [-a|v|r]
+    ${0} list [-a|--all|-v|--valid|-r|--revoked]
 
 Check expiration date of valid certificates :
 
@@ -761,6 +761,11 @@ revoke() {
 list() {
     if [ ! -f "${INDEX_FILE}" ]; then
         exit 0
+    fi
+
+    if [ -z "${1}" ]; then
+        show_usage >&2
+        exit 1
     fi
 
     list_valid=0

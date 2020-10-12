@@ -37,6 +37,33 @@ init() {
     [ -f "${CRL}" ] || touch "${CRL}"
     [ -f "${SERIAL}" ] || echo "01" > "${SERIAL}"
 
+    non_interactive=0
+
+    # Parse options
+    # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
+    while :; do
+        case $1 in
+            --non-interactive)
+                non_interactive=1
+                ;;
+            --)
+                # End of all options.
+                shift
+                break
+                ;;
+            -?*)
+                # ignore unknown options
+                warning "Warning: unknown option (ignored): \`$1'"
+                ;;
+            *)
+                # Default case: If no more options then break out of the loop.
+                break
+                ;;
+        esac
+
+        shift
+    done
+
     cn="${1:-}"
     if [ -z "${cn}" ]; then
         show_usage >&2

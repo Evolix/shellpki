@@ -1,5 +1,12 @@
 #!/bin/sh
 
+carp=$(/sbin/ifconfig carp0 2>/dev/null | grep 'status' | cut -d' ' -f2)
+
+if [ "$carp" = "backup" ]; then
+    exit 0
+fi
+
+
 echo "CA certificate:"
 openssl x509 -enddate -noout -in /etc/shellpki/cacert.pem \
     | cut -d '=' -f 2 \

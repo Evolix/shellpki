@@ -16,7 +16,7 @@ echo ""
 
 echo "Client certificates:"
 grep "Not After" -r /etc/shellpki/certs/ \
-    | sed -e "s/^.*certs\/\([-.@a-z0-9]*\).*After\ :\ \(.*\).*GMT$/\2\1X/" \
+    | sed -e "s/^.*certs\/\([-._@a-z0-9]*\).*After\ :\ \(.*\).*GMT$/\2\1X/" \
     | sed -e "s/^\(.*\)\ \(20..\)\ \(.*\)$/- \2 \1 \3/" \
     | tr "X" "\n" \
     | sed '/^$/d' \

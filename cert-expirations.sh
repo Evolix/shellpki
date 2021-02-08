@@ -6,6 +6,7 @@ if [ "$carp" = "backup" ]; then
     exit 0
 fi
 
+echo "Warning : all times are in UTC !\n"
 
 echo "CA certificate:"
 openssl x509 -enddate -noout -in /etc/shellpki/cacert.pem \

@@ -171,7 +171,7 @@ init() {
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
     while :; do
-        case $1 in
+        case ${1:-} in
             --non-interactive)
                 non_interactive=1
                 ;;
@@ -200,17 +200,27 @@ init() {
     fi
 
     if [ -f "${CA_KEY}" ]; then
-        printf "%s already exists, do you really want to erase it ? [y/N] " "${CA_KEY}"
-        read -r REPLY
-        resp=$(echo "${REPLY}" | tr 'Y' 'y')
-        if [ "${resp}" = "y" ]; then
-            rm -f "${CA_KEY}" "${CA_CERT}"
+        if [ "${non_interactive}" -eq 1 ]; then
+            error "${CA_KEY} already exists, erase it manually if you want to start over."
+        else
+            printf "%s already exists, do you really want to erase it ? [y/N] " "${CA_KEY}"
+            read -r REPLY
+            resp=$(echo "${REPLY}" | tr 'Y' 'y')
+            if [ "${resp}" = "y" ]; then
+                rm -f "${CA_KEY}" "${CA_CERT}"
+            fi
         fi
+    fi
+
+    passout_arg=""
+    if [ -n "${CA_PASSWORD:-}" ]; then
+        passout_arg="-passout pass:${CA_PASSWORD}"
     fi
 
     if [ ! -f "${CA_KEY}" ]; then
         "${OPENSSL_BIN}" genrsa \
             -out "${CA_KEY}" \
+            ${passout_arg} \
             -aes256 \
             "${CA_KEY_LENGTH}" \
             >/dev/null 2>&1

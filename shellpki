@@ -83,8 +83,9 @@ init() {
         "${OPENSSL_BIN}" genrsa \
             -out "${CA_KEY}" \
             -aes256 \
-            ${CA_KEY_LENGTH} \
+            "${CA_KEY_LENGTH}" \
             >/dev/null 2>&1
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the CA key"
         fi
@@ -111,13 +112,14 @@ init() {
             -x509 \
             -days 3650 \
             -extensions v3_ca \
-            -passin pass:${CA_PASSWORD} \
+            -passin pass:"${CA_PASSWORD}" \
             -key "${CA_KEY}" \
             -out "${CA_CERT}" \
             -config /dev/stdin <<EOF
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the CA certificate"
         fi
@@ -140,8 +142,9 @@ ocsp() {
     if [ ! -f "${OCSP_KEY}" ]; then
         "${OPENSSL_BIN}" genrsa \
             -out "${OCSP_KEY}" \
-            ${KEY_LENGTH} \
+            "${KEY_LENGTH}" \
             >/dev/null 2>&1
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the OCSP key"
         fi
@@ -158,6 +161,7 @@ commonName_default = ${url}
 [ usr_cert ]
 authorityInfoAccess = OCSP;URI:http://${ocsp_uri}
 EOF
+    # shellcheck disable=SC2181
     if [ "$?" -ne 0 ]; then
         error "Error generating the OCSP request"
     fi
@@ -171,8 +175,9 @@ EOF
             -extensions v3_ocsp \
             -in "${ocsp_csr_file}" \
             -out "${OCSP_CERT}" \
-            -passin pass:${CA_PASSWORD} \
+            -passin pass:"${CA_PASSWORD}" \
             -config "${CONF_FILE}"
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the OCSP certificate"
         fi
@@ -236,7 +241,7 @@ warning() {
 verify_ca_password() {
     "${OPENSSL_BIN}" rsa \
         -in "${CA_KEY}"    \
-        -passin pass:${CA_PASSWORD} \
+        -passin pass:"${CA_PASSWORD}" \
         >/dev/null 2>&1
 }
 get_real_path() {
@@ -333,6 +338,7 @@ create() {
                 if [ -n "$2" ]; then
                     from_csr=1
                     csr_file=$(get_real_path "${2}")
+                    # shellcheck disable=SC2181
                     if [ "$?" -ne 0 ]; then
                         error "Error accessing file \`${2}'"
                     fi
@@ -345,6 +351,7 @@ create() {
                 from_csr=1
                 # csr-file option, with value separated by =
                 csr_file=$(get_real_path "${1#*=}")
+                # shellcheck disable=SC2181
                 if [ "$?" -ne 0 ]; then
                     error "Error accessing file \`${1#*=}'"
                 fi
@@ -360,6 +367,7 @@ create() {
                 # password-file option, with value separated by space
                 if [ -n "$2" ]; then
                     password_file=$(get_real_path "${2}")
+                    # shellcheck disable=SC2181
                     if [ "$?" -ne 0 ]; then
                         error "Error accessing file \`${2}'"
                     fi
@@ -371,6 +379,7 @@ create() {
             --password-file=?*)
                 # password-file option, with value separated by =
                 password_file=$(get_real_path "${1#*=}")
+                # shellcheck disable=SC2181
                 if [ "$?" -ne 0 ]; then
                     error "Error accessing file \`${1#*=}'"
                 fi
@@ -447,6 +456,7 @@ create() {
     fi
     if [ -n "${end_date}" ]; then
         cert_end_date=$(TZ=:Zulu date --date "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Invalid end date format : \`${end_date}' can't be parsed by date(1)"
         else
@@ -478,6 +488,7 @@ create() {
             -subject \
             -in "${csr_file}" \
             >/dev/null 2>&1
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "${csr_file} is not a valid CSR !"
         fi
@@ -489,6 +500,7 @@ create() {
             -in "${csr_file}" \
             | grep -Eo "CN\s*=[^,/]*" \
             >/dev/null 2>&1
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "${csr_file} doesn't contain a CommonName !"
         fi
@@ -511,9 +523,10 @@ create() {
             ${batch_arg} \
             -config "${CONF_FILE}" \
             -in "${csr_file}" \
-            -passin pass:${CA_PASSWORD} \
+            -passin pass:"${CA_PASSWORD}" \
             -out "${crt_file}" \
             ${crt_expiration_arg}
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the certificate"
         else
@@ -552,8 +565,9 @@ create() {
         "${OPENSSL_BIN}" genrsa \
             -out "${key_file}" \
             ${pass_args} \
-            ${KEY_LENGTH} \
+            "${KEY_LENGTH}" \
             >/dev/null 2>&1
+        # shellcheck disable=SC2181
         if [ "$?" -eq 0 ]; then
             echo "The KEY file is available at \`${key_file}'"
         else
@@ -577,6 +591,7 @@ create() {
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the CSR"
         fi
@@ -589,6 +604,7 @@ EOF
             -in "${csr_file}" \
             -out "${crt_file}" \
             ${crt_expiration_arg}
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the certificate"
         fi
@@ -599,6 +615,7 @@ EOF
             -subject \
             -in "${crt_file}" \
             >/dev/null 2>&1
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             rm -f "${crt_file}"
         fi
@@ -631,6 +648,7 @@ EOF
             -in "${crt_file}" \
             -out "${pkcs12_file}" \
             ${pass_args}
+        # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the pkcs12 file"
         fi
@@ -686,6 +704,7 @@ EOF
                 fi
             done
 
+            # shellcheck disable=SC2086
             chown -R ${PKI_USER}:${PKI_USER} "${COPY_DIR}/"
             chmod -R u=rwX,g=rwX,o= "${COPY_DIR}/"
         fi
@@ -740,6 +759,7 @@ revoke() {
         -subject \
         -in "${crt_file}" \
         >/dev/null 2>&1
+    # shellcheck disable=SC2181
     if [ "$?" -ne 0 ]; then
         error "${crt_file} is not a valid CRT, you must delete it !"
     fi
@@ -750,15 +770,16 @@ revoke() {
     echo "Revoke certificate ${crt_file} :"
     "${OPENSSL_BIN}" ca \
         -config "${CONF_FILE}" \
-        -passin pass:${CA_PASSWORD} \
+        -passin pass:"${CA_PASSWORD}" \
         -revoke "${crt_file}"
+    # shellcheck disable=SC2181
     if [ "$?" -eq 0 ]; then
         rm "${crt_file}"
     fi
 
     "${OPENSSL_BIN}" ca \
         -config "${CONF_FILE}" \
-        -passin pass:${CA_PASSWORD} \
+        -passin pass:"${CA_PASSWORD}" \
         -gencrl \
         -out "${CRL}"
 }
@@ -826,7 +847,7 @@ check() {
     min_day=90
     cur_epoch=$(date -u +'%s')
 
-    for cert in ${CRT_DIR}/*; do
+    for cert in "${CRT_DIR}"/*; do
         end_date=$(cert_end_date "${cert}")
         end_epoch=$(date -ud "${end_date}" +'%s')
         diff_epoch=$(( end_epoch - cur_epoch ))

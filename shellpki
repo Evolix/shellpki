@@ -239,6 +239,11 @@ verify_ca_password() {
         -passin pass:${CA_PASSWORD} \
         >/dev/null 2>&1
 }
+get_real_path() {
+    # --canonicalize is supported on Linux
+    # -f is supported on Linux and OpenBSD 
+    readlink -f -- "${1}"
+}
 
 ask_ca_password() {
     attempt=${1:-0}
@@ -327,7 +332,7 @@ create() {
                 # csr-file option, with value separated by space
                 if [ -n "$2" ]; then
                     from_csr=1
-                    csr_file=$(readlink --canonicalize -- "${2}")
+                    csr_file=$(get_real_path "${2}")
                     if [ "$?" -ne 0 ]; then
                         error "Error accessing file \`${2}'"
                     fi
@@ -339,7 +344,7 @@ create() {
             --file=?*|--csr-file=?*)
                 from_csr=1
                 # csr-file option, with value separated by =
-                csr_file=$(readlink --canonicalize -- "${1#*=}")
+                csr_file=$(get_real_path "${1#*=}")
                 if [ "$?" -ne 0 ]; then
                     error "Error accessing file \`${1#*=}'"
                 fi
@@ -354,7 +359,7 @@ create() {
             --password-file)
                 # password-file option, with value separated by space
                 if [ -n "$2" ]; then
-                    password_file=$(readlink --canonicalize -- "${2}")
+                    password_file=$(get_real_path "${2}")
                     if [ "$?" -ne 0 ]; then
                         error "Error accessing file \`${2}'"
                     fi
@@ -365,7 +370,7 @@ create() {
                 ;;
             --password-file=?*)
                 # password-file option, with value separated by =
-                password_file=$(readlink --canonicalize -- "${1#*=}")
+                password_file=$(get_real_path "${1#*=}")
                 if [ "$?" -ne 0 ]; then
                     error "Error accessing file \`${1#*=}'"
                 fi

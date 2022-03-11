@@ -1,0 +1,54 @@
+#
+# General settings
+#
+
+user  nobody
+group nogroup
+
+# Do not try to re-read key file and reopen tun device on restart since it runs
+# without root privileges.
+persist-key
+persist-tun
+#persist-remote-ip
+#persist-local-ip
+
+# Status file
+status /var/log/openvpn/status.log 1
+#log    /var/log/openvpn/openvpn.log
+# Logging verbosity. Logs are sent to syslog.
+verb 3
+
+# Keepalive
+keepalive 10 120
+#reneg-sec 300
+
+#
+# Network settings
+#
+
+port  1194
+proto udp
+dev   tun
+
+# Enable compression
+# comp-lzo
+# compress lzo (OpenVPN 2.4+)
+
+#
+# key/certificate
+#
+
+### ca   /etc/openvpn/ssl/ca/cacert.pem
+### cert /etc/openvpn/ssl/files/fw.vpn.example.com-1278421834/fw.vpn.example.com.crt
+### key /etc/openvpn/ssl/files/fw.vpn.example.com-1278421834/fw.vpn.example.com.key
+dh   /etc/openvpn/ssl/ca/dh2048.pem
+
+#
+# private network
+#
+
+server 192.0.2.0 255.255.0.0
+mode server
+
+# Management interface (used by check_openvpn for Nagios)
+management 127.0.0.1 1195 /etc/openvpn/management-pwd

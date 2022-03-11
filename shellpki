@@ -805,9 +805,6 @@ list() {
         exit 1
     fi
 
-    list_valid=0
-    list_revoked=1
-
     while :; do
         case "${1:-}" in
             -a|--all)
@@ -822,9 +819,6 @@ list() {
                 list_valid=1
                 list_revoked=0
                 shift;;
-            --)
-                shift
-                break;;
             -?*)
                 warning "unknow option ${1} (ignored)"
                 shift;;

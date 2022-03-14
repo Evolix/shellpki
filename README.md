@@ -49,6 +49,7 @@ proto udp
 
 remote ovpn.example.com 1194
 
+nobind
 persist-key
 persist-tun
 

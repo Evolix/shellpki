@@ -1,54 +1,34 @@
-#
-# General settings
-#
-
 user  nobody
 group nogroup
 
-# Do not try to re-read key file and reopen tun device on restart since it runs
-# without root privileges.
+local 198.51.100.1
+port 1194
+proto udp
+dev tun
+mode server
+keepalive 10 120
+tls-exit
+
+cipher AES-256-GCM # AES
+
 persist-key
 persist-tun
-#persist-remote-ip
-#persist-local-ip
 
-# Status file
-status /var/log/openvpn/status.log 1
-#log    /var/log/openvpn/openvpn.log
-# Logging verbosity. Logs are sent to syslog.
-verb 3
+ifconfig-pool-persist /etc/openvpn/ipp.txt
 
-# Keepalive
-keepalive 10 120
-#reneg-sec 300
+status /var/log/openvpn-status.log
+log-append  /var/log/openvpn.log
 
-#
-# Network settings
-#
+ca   /etc/shellpki/cacert.pem
+#cert /etc/shellpki/certs/fw.vpn.example.com.crt
+#key  /etc/shellpki/private/fw.vpn.example.com-1621504035.key
+dh   /etc/shellpki/dh2048.pem
 
-port  1194
-proto udp
-dev   tun
+crl-verify /etc/shellpki/crl.pem
 
-# Enable compression
-# comp-lzo
-# compress lzo (OpenVPN 2.4+)
+server 192.0.2.0 255.255.255.0
 
-#
-# key/certificate
-#
-
-### ca   /etc/openvpn/ssl/ca/cacert.pem
-### cert /etc/openvpn/ssl/files/fw.vpn.example.com-1278421834/fw.vpn.example.com.crt
-### key /etc/openvpn/ssl/files/fw.vpn.example.com-1278421834/fw.vpn.example.com.key
-dh   /etc/openvpn/ssl/ca/dh2048.pem
-
-#
-# private network
-#
-
-server 192.0.2.0 255.255.0.0
-mode server
+#push "route 192.0.3.0 255.255.255.0"
 
 # Management interface (used by check_openvpn for Nagios)
 management 127.0.0.1 1195 /etc/openvpn/management-pwd

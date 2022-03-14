@@ -137,23 +137,24 @@ replace_existing_or_abort() {
     cn=${1:?}
     if [ "${non_interactive}" -eq 1 ]; then
         if [ "${replace_existing}" -eq 1 ]; then
-            resp="y"
+            revoke --non-interactive "${cn}"
         else
             error "${cn} already exists, use \`--replace-existing' to force"
         fi
     else
         if [ "${replace_existing}" -eq 1 ]; then
-            resp="y"
+            revoke "${cn}"
         else
             printf "%s already exists, do you want to revoke and recreate it ? [y/N] " "${cn}"
             read -r REPLY
             resp=$(echo "${REPLY}" | tr 'Y' 'y')
+
+            if [ "${resp}" = "y" ]; then
+                revoke "${cn}"
+            else
+                error "Aborted"
+            fi
         fi
-    fi
-    if [ "${resp}" = "y" ]; then
-        revoke "${cn}"
-    else
-        error "Aborted"
     fi
 }
 

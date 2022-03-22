@@ -103,9 +103,9 @@ List all certificates :
     shellpki list <options>
 
     Options
-        -a, --all
-        -v, --valid
-        -r, --revoked
+        -a, --all                   list all certificates : valid and revoked ones
+        -v, --valid                 list all valid certificates
+        -r, --revoked               list all revoked certificates
 ~~~
 
 Check expiration date of valid certificates :

@@ -36,31 +36,53 @@ Initialize PKI (create CA key and self-signed cert) :
 
     ${0} init <commonName_for_CA>
 
-Run OCSP_D server :
+    Options
+        --non-interactive           do not prompt the user, and exit if an error occurs
 
-    ${0} ocsp <ocsp_uri:ocsp_port>
+Create a client cert with key and CSR directly generated on server :
 
-Create a client cert with key and CSR directly generated on server
-(use -p or --password-file to set a password on the client key) :
+    ${0} create <commonName>
 
-    ${0} create [-p|--password-file=<FILE>] <commonName>
+    Options
+        -f, --file, --csr-file      create a client cert from a CSR (doesn't need key)
+        -p, --password              prompt the user for a password to set on the client key
+            --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
+            --days                  specify how many days the certificate should be valid
+            --end-date              specify until which date the certificate should be valid, in MM/DD/[YY]YY [hh:mm:ss] format
+            --non-interactive       do not prompt the user, and exit if an error occurs
+            --replace-existing      if the certificate already exists, revoke it before creating a new one
 
-Create a client cert from a CSR (doesn't need key) :
-
-    ${0} create -f <path>
-
-Revoke a client cert with is commonName (CN) :
+Revoke a client cert :
 
     ${0} revoke <commonName>
 
-List all actually valid commonName (CN) :
+    Options
+        --non-interactive           do not prompt the user, and exit if an error occurs
 
-    ${0} list [-a|--all|-v|--valid|-r|--revoked]
+List all certificates :
+
+    ${0} list <options>
+
+    Options
+        -a, --all
+        -v, --valid
+        -r, --revoked
 
 Check expiration date of valid certificates :
 
     ${0} check
 
+Run OCSP_D server :
+
+    ${0} ocsp <ocsp_uri:ocsp_port>
+
+Show version :
+
+    ${0} version
+
+Show help :
+
+    ${0} help
 EOF
 }
 

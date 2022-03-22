@@ -50,47 +50,86 @@ proto udp
 remote ovpn.example.com 1194
 
 nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
 
-cipher AES-256-CBC
+cipher AES-256-GCM
 ~~~
 
 ## Usage
 
 ~~~
-Usage: ./shellpki <subcommand> [options] [CommonName]
+Usage: shellpki <subcommand> [options] [CommonName]
 ~~~
 
 Initialize PKI (create CA key and self-signed cert) :
 
 ~~~
-   ./shellpki init <commonName_for_CA>
+    shellpki init <commonName_for_CA>
+
+    Options
+        --non-interactive           do not prompt the user, and exit if an error occurs
 ~~~
 
-Create a client cert with key and CSR directly generated on server
-(use -p for set a password on client key) :
+Create a client cert with key and CSR directly generated on server :
 
 ~~~
-    ./shellpki create [-p] <commonName>
+    shellpki create <commonName>
+
+    Options
+        -f, --file, --csr-file      create a client cert from a CSR (doesn't need key)
+        -p, --password              prompt the user for a password to set on the client key
+            --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
+            --days                  specify how many days the certificate should be valid
+            --end-date              specify until which date the certificate should be valid, in MM/DD/[YY]YY [hh:mm:ss] format
+            --non-interactive       do not prompt the user, and exit if an error occurs
+            --replace-existing      if the certificate already exists, revoke it before creating a new one
 ~~~
 
-Create a client cert from a CSR (doesn't need key) :
+Revoke a client cert :
 
 ~~~
-    ./shellpki create -f <path>
+    shellpki revoke <commonName>
+
+    Options
+        --non-interactive           do not prompt the user, and exit if an error occurs
 ~~~
 
-Revoke a client cert with is commonName (CN) :
+List all certificates :
 
 ~~~
-    ./shellpki revoke <commonName>
+    shellpki list <options>
+
+    Options
+        -a, --all
+        -v, --valid
+        -r, --revoked
 ~~~
 
-List all actually valid commonName (CN) :
+Check expiration date of valid certificates :
 
 ~~~
-    ./shellpki list
+    shellpki check
+~~~
+
+Run OCSP_D server :
+
+~~~
+    shellpki ocsp <ocsp_uri:ocsp_port>
+~~~
+
+Show version :
+
+~~~
+    shellpki version
+~~~
+
+Show help :
+
+~~~
+    shellpki help
 ~~~
 
 ## License

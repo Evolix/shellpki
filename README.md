@@ -64,7 +64,7 @@ cipher AES-256-GCM
 Usage: shellpki <subcommand> [options] [CommonName]
 ~~~
 
-Initialize PKI (create CA key and self-signed cert) :
+Initialize PKI (create CA key and self-signed certificate) :
 
 ~~~
     shellpki init <commonName_for_CA>
@@ -73,13 +73,13 @@ Initialize PKI (create CA key and self-signed cert) :
         --non-interactive           do not prompt the user, and exit if an error occurs
 ~~~
 
-Create a client cert with key and CSR directly generated on server :
+Create a client certificate with key and CSR directly generated on server :
 
 ~~~
     shellpki create <commonName>
 
     Options
-        -f, --file, --csr-file      create a client cert from a CSR (doesn't need key)
+        -f, --file, --csr-file      create a client certificate from a CSR (doesn't need key)
         -p, --password              prompt the user for a password to set on the client key
             --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
             --days                  specify how many days the certificate should be valid
@@ -88,7 +88,7 @@ Create a client cert with key and CSR directly generated on server :
             --replace-existing      if the certificate already exists, revoke it before creating a new one
 ~~~
 
-Revoke a client cert :
+Revoke a client certificate :
 
 ~~~
     shellpki revoke <commonName>

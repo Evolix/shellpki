@@ -502,8 +502,13 @@ create() {
 
     # Set expiration argument
     crt_expiration_arg=""
-    if [ -n "${days}" ] && [ "${days}" -gt 0 ]; then
-        crt_expiration_arg="-days ${days}"
+    if [ -n "${days}" ]; then
+        if [ "${days}" -gt 0 ]; then
+            crt_expiration_arg="-days ${days}"
+        else
+            error "Argument error: \"${days}\" is not a valid value for \`--days'."
+            echo $days
+        fi
     fi
     if [ -n "${end_date}" ]; then
         if [ "${SYSTEM}" = "linux" ]; then

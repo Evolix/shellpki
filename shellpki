@@ -239,6 +239,8 @@ init() {
     passout_arg=""
     if [ -n "${CA_PASSWORD:-}" ]; then
         passout_arg="-passout pass:${CA_PASSWORD}"
+    elif [ "${non_interactive}" -eq 1 ]; then
+        error "In non-interactive mode, you must pass CA_PASSWORD as environment variable."
     fi
 
     if [ ! -f "${CA_KEY}" ]; then
@@ -255,11 +257,15 @@ init() {
     fi
 
     if [ -f "${CA_CERT}" ]; then
-        printf "%s already exists, do you really want to erase it ? [y/N] " "${CA_CERT}"
-        read -r REPLY
-        resp=$(echo "${REPLY}" | tr 'Y' 'y')
-        if [ "${resp}" = "y" ]; then
-            rm "${CA_CERT}"
+        if [ "${non_interactive}" -eq 1 ]; then
+            error "${CA_CERT} already exists, erase it manually if you want to start over."
+        else
+            printf "%s already exists, do you really want to erase it ? [y/N] " "${CA_CERT}"
+            read -r REPLY
+            resp=$(echo "${REPLY}" | tr 'Y' 'y')
+            if [ "${resp}" = "y" ]; then
+                rm "${CA_CERT}"
+            fi
         fi
     fi
 

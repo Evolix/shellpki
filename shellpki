@@ -508,7 +508,6 @@ create() {
             crt_expiration_arg="-days ${days}"
         else
             error "Argument error: \"${days}\" is not a valid value for \`--days'."
-            echo $days
         fi
     fi
     if [ -n "${end_date}" ]; then

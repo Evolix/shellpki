@@ -31,17 +31,18 @@ END
 show_usage() {
     cat <<EOF
 Usage: ${0} <subcommand> [options] [CommonName]
+Warning: [options] always must be before [CommonName] and after <subcommand>
 
 Initialize PKI (create CA key and self-signed certificate) :
 
-    ${0} init <commonName_for_CA>
+    ${0} init [options] <commonName_for_CA>
 
     Options
         --non-interactive           do not prompt the user, and exit if an error occurs
 
 Create a client certificate with key and CSR directly generated on server :
 
-    ${0} create <commonName>
+    ${0} create [options] <commonName>
 
     Options
         -f, --file, --csr-file      create a client certificate from a CSR (doesn't need key)
@@ -54,7 +55,7 @@ Create a client certificate with key and CSR directly generated on server :
 
 Revoke a client certificate :
 
-    ${0} revoke <commonName>
+    ${0} revoke [options] <commonName>
 
     Options
         --non-interactive           do not prompt the user, and exit if an error occurs

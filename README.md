@@ -67,7 +67,7 @@ Usage: shellpki <subcommand> [options] [CommonName]
 Initialize PKI (create CA key and self-signed certificate) :
 
 ~~~
-shellpki init <commonName_for_CA>
+shellpki init [options] <commonName_for_CA>
 
 Options
     --non-interactive           do not prompt the user, and exit if an error occurs
@@ -76,14 +76,14 @@ Options
 Create a client certificate with key and CSR directly generated on server :
 
 ~~~
-shellpki create <commonName>
+shellpki create [options] <commonName>
 
 Options
     -f, --file, --csr-file      create a client certificate from a CSR (doesn't need key)
     -p, --password              prompt the user for a password to set on the client key
         --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
         --days                  specify how many days the certificate should be valid
-        --end-date              specify until which date the certificate should be valid, in MM/DD/[YY]YY [hh:mm:ss] format
+        --end-date              specify until which date the certificate should be valid, in MM/DD/YYYY hh:mm:ss format
         --non-interactive       do not prompt the user, and exit if an error occurs
         --replace-existing      if the certificate already exists, revoke it before creating a new one
 ~~~
@@ -91,7 +91,7 @@ Options
 Revoke a client certificate :
 
 ~~~
-shellpki revoke <commonName>
+shellpki revoke [options] <commonName>
 
 Options
     --non-interactive           do not prompt the user, and exit if an error occurs

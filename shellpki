@@ -369,6 +369,8 @@ create() {
     replace_existing=0
     days=""
     end_date=""
+    days_set=0
+    end_date_set=0
 
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
@@ -433,6 +435,7 @@ create() {
                 # days option, with value separated by space
                 if [ -n "$2" ]; then
                     days=${2}
+                    days_set=1
                     shift
                 else
                     error "Argument error: \`--days' requires a value"
@@ -441,6 +444,7 @@ create() {
             --days=?*)
                 # days option, with value separated by =
                 days=${1#*=}
+                days_set=1
                 ;;
             --days=)
                 # days options, without value
@@ -450,6 +454,7 @@ create() {
                 # end-date option, with value separated by space
                 if [ -n "$2" ]; then
                     end_date=${2}
+                    end_date_set=1
                     shift
                 else
                     error "Argument error: \`--end-date' requires a value"
@@ -458,6 +463,7 @@ create() {
             --end-date=?*)
                 # end-date option, with value separated by =
                 end_date=${1#*=}
+                end_date_set=1
                 ;;
             --end-date=)
                 # end-date options, without value
@@ -486,6 +492,10 @@ create() {
 
         shift
     done
+
+    if [ "${days_set}" -eq 1 ] && [ "${end_date_set}" -eq 1 ]; then
+        error "Argument error: \`--end-date' and \`--days' cannot be used together."
+    fi
 
     # The name of the certificate
     cn="${1:-}"

@@ -373,7 +373,7 @@ create() {
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
     while :; do
-        case $1 in
+        case ${1:-} in
             -f|--file|--csr-file)
                 # csr-file option, with value separated by space
                 if [ -n "$2" ]; then
@@ -770,7 +770,7 @@ revoke() {
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
     while :; do
-        case $1 in
+        case ${1:-} in
             --non-interactive)
                 non_interactive=1
                 ;;

@@ -11,7 +11,7 @@ show_version() {
     cat <<END
 shellpki version ${VERSION}
 
-Copyright 2010-2019 Evolix <info@evolix.fr>,
+Copyright 2010-2022 Evolix <info@evolix.fr>,
                     Thomas Martin <tmartin@evolix.fr>,
                     Gregory Colpart <reg@evolix.fr>,
                     Romain Dessort <rdessort@evolix.fr>,
@@ -19,7 +19,8 @@ Copyright 2010-2019 Evolix <info@evolix.fr>,
                     Victor Laborie <vlaborie@evolix.fr>,
                     Daniel Jakots <djakots@evolix.fr>,
                     Patrick Marchand <pmarchand@evolix.fr>,
-                    Jérémy Lecour <jlecour@evolix.fr>
+                    Jérémy Lecour <jlecour@evolix.fr>,
+                    Jérémy Dubois <jdubois@evolix.fr>
                     and others.
 
 shellpki comes with ABSOLUTELY NO WARRANTY.  This is free software,

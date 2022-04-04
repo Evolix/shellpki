@@ -5,7 +5,7 @@
 
 set -u
 
-VERSION="1.0.0"
+VERSION="22.04"
 
 show_version() {
     cat <<END
@@ -34,6 +34,27 @@ show_usage() {
 Usage: ${0} <subcommand> [options] [CommonName]
 Warning: [options] always must be before [CommonName] and after <subcommand>
 
+EOF
+show_usage_init
+show_usage_create
+show_usage_revoke
+show_usage_list
+show_usage_check
+show_usage_ocsp
+
+    cat <<EOF
+Show version :
+
+    ${0} --version
+
+Show help :
+
+    ${0} --help
+EOF
+}
+
+show_usage_init() {
+    cat <<EOF
 Initialize PKI (create CA key and self-signed certificate) :
 
     ${0} init [options] <commonName_for_CA>
@@ -41,6 +62,11 @@ Initialize PKI (create CA key and self-signed certificate) :
     Options
         --non-interactive           do not prompt the user, and exit if an error occurs
 
+EOF
+}
+
+show_usage_create() {
+    cat <<EOF
 Create a client certificate with key and CSR directly generated on server :
 
     ${0} create [options] <commonName>
@@ -54,6 +80,11 @@ Create a client certificate with key and CSR directly generated on server :
             --non-interactive       do not prompt the user, and exit if an error occurs
             --replace-existing      if the certificate already exists, revoke it before creating a new one
 
+EOF
+}
+
+show_usage_revoke() {
+    cat <<EOF
 Revoke a client certificate :
 
     ${0} revoke [options] <commonName>
@@ -61,7 +92,12 @@ Revoke a client certificate :
     Options
         --non-interactive           do not prompt the user, and exit if an error occurs
 
-List all certificates :
+EOF
+}
+
+show_usage_list() {
+    cat <<EOF
+List certificates :
 
     ${0} list <options>
 
@@ -70,21 +106,24 @@ List all certificates :
         -v, --valid                 list all valid certificates
         -r, --revoked               list all revoked certificates
 
+EOF
+}
+
+show_usage_check() {
+    cat <<EOF
 Check expiration date of valid certificates :
 
     ${0} check
 
+EOF
+}
+
+show_usage_ocsp() {
+    cat <<EOF
 Run OCSP_D server :
 
     ${0} ocsp <ocsp_uri:ocsp_port>
 
-Show version :
-
-    ${0} version
-
-Show help :
-
-    ${0} help
 EOF
 }
 
@@ -220,7 +259,7 @@ init() {
 
     cn="${1:-}"
     if [ -z "${cn}" ]; then
-        show_usage >&2
+        show_usage_init >&2
         exit 1
     fi
 
@@ -301,7 +340,7 @@ ocsp() {
 
     ocsp_uri="${1:-}"
     if [ -z "${ocsp_uri}" ]; then
-        show_usage >&2
+        show_usage_ocsp >&2
         exit 1
     fi
     ocsp_csr_file="${CSR_DIR}/ocsp.csr"
@@ -602,7 +641,7 @@ create() {
         fi
     else
         if [ -z "${cn}" ]; then
-            show_usage >&2
+            show_usage_create >&2
             exit 1
         fi
         csr_file="${CSR_DIR}/${cn}-${SUFFIX}.csr"
@@ -811,7 +850,7 @@ revoke() {
     cn="${1:-}"
 
     if [ -z "${cn}" ]; then
-        show_usage >&2
+        show_usage_revoke >&2
         exit 1
     fi
 
@@ -858,7 +897,7 @@ list() {
     fi
 
     if [ -z "${1:-}" ]; then
-        show_usage >&2
+        show_usage_list >&2
         exit 1
     fi
 
@@ -1026,12 +1065,12 @@ main() {
             check "$@"
         ;;
 
-        version)
+        version|--version)
             show_version
             exit 0
         ;;
 
-        help)
+        help|--help)
             show_usage
             exit 0
         ;;

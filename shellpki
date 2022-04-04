@@ -1020,7 +1020,7 @@ main() {
     fi
 
     OPENSSL_BIN=$(command -v openssl)
-    SUFFIX=$(/bin/date +"%s")
+    SUFFIX=$(TZ=:Zulu /bin/date +"%Y%m%d%H%M%SZ")
 
     if ! is_user "${PKI_USER}" || ! is_group "${PKI_USER}"; then
         error "You must create ${PKI_USER} user and group !"

@@ -332,13 +332,13 @@ EOF
         if [ "$?" -ne 0 ]; then
             error "Error generating the CA certificate"
         fi
-    fi
     
         "${OPENSSL_BIN}" ca \
             -config "${CONF_FILE}" \
             -passin pass:${CA_PASSWORD} \
             -gencrl \
             -out "${CRL}"
+    fi
 }
 
 ocsp() {

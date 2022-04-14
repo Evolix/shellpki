@@ -1,5 +1,7 @@
 #!/bin/sh
 
+VERSION="22.04"
+
 carp=$(/sbin/ifconfig carp0 2>/dev/null | grep 'status' | cut -d' ' -f2)
 
 if [ "$carp" = "backup" ]; then

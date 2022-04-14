@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+### Security
+
+## [22.04] 2022-04-14
+
+### Added
+
 * Create a changelog
 * Add a version number and `version` command
 * Accept a `password-file` command line option to read password from a file
@@ -34,12 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Remove "set -e" and add many return code checks
 * Prevent use of uninitialized variables
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 * Check on $USER was always true
-
-### Security

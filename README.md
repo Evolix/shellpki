@@ -3,6 +3,11 @@
 This script is a wrapper around OpenSSL to manage a small
 [PKI](https://en.wikipedia.org/wiki/Public_key_infrastructure).
 
+## Contribution
+
+After an update of this repo and if everything is working fine, some files must
+be copied to [ansible-roles/openvpn](https://gitea.evolix.org/evolix/ansible-roles/src/branch/unstable/openvpn/files/shellpki)
+
 ## Install
 
 ### Debian
@@ -49,47 +54,87 @@ proto udp
 
 remote ovpn.example.com 1194
 
+nobind
+user nobody
+group nogroup
 persist-key
 persist-tun
 
-cipher AES-256-CBC
+cipher AES-256-GCM
 ~~~
 
 ## Usage
 
 ~~~
-Usage: ./shellpki <subcommand> [options] [CommonName]
+Usage: shellpki <subcommand> [options] [CommonName]
 ~~~
 
-Initialize PKI (create CA key and self-signed cert) :
+Initialize PKI (create CA key and self-signed certificate) :
 
 ~~~
-   ./shellpki init <commonName_for_CA>
+shellpki init [options] <commonName_for_CA>
+
+Options
+    --non-interactive           do not prompt the user, and exit if an error occurs
 ~~~
 
-Create a client cert with key and CSR directly generated on server
-(use -p for set a password on client key) :
+Create a client certificate with key and CSR directly generated on server :
 
 ~~~
-    ./shellpki create [-p] <commonName>
+shellpki create [options] <commonName>
+
+Options
+    -f, --file, --csr-file      create a client certificate from a CSR (doesn't need key)
+    -p, --password              prompt the user for a password to set on the client key
+        --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
+        --days                  specify how many days the certificate should be valid
+        --end-date              specify until which date the certificate should be valid, in YYYY/MM/DD hh:mm:ss format, UTC +0
+        --non-interactive       do not prompt the user, and exit if an error occurs
+        --replace-existing      if the certificate already exists, revoke it before creating a new one
 ~~~
 
-Create a client cert from a CSR (doesn't need key) :
+Revoke a client certificate :
 
 ~~~
-    ./shellpki create -f <path>
+shellpki revoke [options] <commonName>
+
+Options
+    --non-interactive           do not prompt the user, and exit if an error occurs
 ~~~
 
-Revoke a client cert with is commonName (CN) :
+List all certificates :
 
 ~~~
-    ./shellpki revoke <commonName>
+shellpki list <options>
+
+Options
+    -a, --all                   list all certificates : valid and revoked ones
+    -v, --valid                 list all valid certificates
+    -r, --revoked               list all revoked certificates
 ~~~
 
-List all actually valid commonName (CN) :
+Check expiration date of valid certificates :
 
 ~~~
-    ./shellpki list
+shellpki check
+~~~
+
+Run OCSP_D server :
+
+~~~
+shellpki ocsp <ocsp_uri:ocsp_port>
+~~~
+
+Show version :
+
+~~~
+shellpki version
+~~~
+
+Show help :
+
+~~~
+shellpki help
 ~~~
 
 ## License

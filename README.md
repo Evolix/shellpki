@@ -3,6 +3,11 @@
 This script is a wrapper around OpenSSL to manage a small
 [PKI](https://en.wikipedia.org/wiki/Public_key_infrastructure).
 
+## Contribution
+
+After an update of this repo and if everything is working fine, some files must
+be copied to [ansible-roles/openvpn](https://gitea.evolix.org/evolix/ansible-roles/src/branch/unstable/openvpn/files/shellpki)
+
 ## Install
 
 ### Debian

@@ -16,11 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `--non-interactive` command line option
 * Add `--replace-existing` command line option
 * Copy files if destination exists
+* Generate the CRL file after initialization of the CA
 * `cert-expirations.sh` script to print out certificates expiration dates
 
 ### Changed
 
 * Rename internal function usage() to show_usage()
+* Split show_usage() for each subcommand
 * More readable variable names
 * verify_ca_password() looks for a previously set password and verifies it
 * Extract cert_end_date() function
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Extract ask_user_password() function
 * Extract variables for files
 * Use inline pass phrase arguments
+* Create files with a human readable date instead of epoch
 * Remove "set -e" and add many return code checks
 * Prevent use of uninitialized variables
 

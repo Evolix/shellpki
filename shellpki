@@ -630,7 +630,7 @@ create() {
         # get CN from CSR
         cn=$("${OPENSSL_BIN}" req -noout -subject -in "${csr_file}" | grep -Eo "CN\s*=[^,/]*" | cut -d'=' -f2 | xargs)
 
-        # check if CN already exist
+        # check if CN already exists
         if [ -f "${crt_file}" ]; then
             replace_existing_or_abort "${cn}"
         fi
@@ -665,16 +665,16 @@ create() {
         ovpn_file="${OVPN_DIR}/${cn}-${SUFFIX}.ovpn"
         pkcs12_file="${PKCS12_DIR}/${cn}-${SUFFIX}.p12"
 
-        # check if CN already exist
-        if [ -f "${crt_file}" ]; then
-            replace_existing_or_abort "${cn}"
-        fi
-
         # ask for CA passphrase
         ask_ca_password 0
 
         if [ "${ask_pass}" -eq 1 ]; then
             ask_user_password
+        fi
+
+        # check if CN already exists
+        if [ -f "${crt_file}" ]; then
+            replace_existing_or_abort "${cn}"
         fi
 
         # generate private key

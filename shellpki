@@ -227,6 +227,7 @@ init() {
     [ -d "${CA_DIR}" ] || mkdir -m 0750 "${CA_DIR}"
     [ -d "${CRT_DIR}" ] || mkdir -m 0750 "${CRT_DIR}"
     [ -f "${INDEX_FILE}" ] || touch "${INDEX_FILE}"
+    [ -f "${INDEX_FILE}.attr" ] || touch "${INDEX_FILE}.attr"
     [ -f "${CRL}" ] || touch "${CRL}"
     [ -f "${SERIAL}" ] || echo "01" > "${SERIAL}"
 

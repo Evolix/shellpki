@@ -151,6 +151,7 @@ $ for cert_name in $(cat /path/to/file_certs_to_revoke); do CA_PASSWORD=$CA_PASS
 To create (without `--replace-existing`) or renew (with `--replace-existing`), with a password on the client key :
 
 ~~~
+$ read CA_PASS
 $ for cert_name in $(cat /path/to/file_certs_to_create); do apg -n 1 -m 16 -M lcN > /path/to/folder/to/store/${cert_name}.passwd; CA_PASSWORD=$CA_PASS shellpki create --replace-existing --non-interactive --password-file /path/to/folder/to/store/${cert_name}.passwd ${cert_name}; done
 ~~~
 

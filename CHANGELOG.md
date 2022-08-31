@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* The key file can be read and written only by the owner
+
 ### Changed
 
 ### Fixed

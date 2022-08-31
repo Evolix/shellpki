@@ -692,6 +692,7 @@ create() {
             >/dev/null 2>&1
         # shellcheck disable=SC2181
         if [ "$?" -eq 0 ]; then
+            chmod 600 "${key_file}"
             echo "The KEY file is available at \`${key_file}'"
         else
             error "Error generating the private key"

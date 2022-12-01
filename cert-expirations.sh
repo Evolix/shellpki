@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="22.04"
+VERSION="22.12"
 
 show_version() {
     cat <<END

@@ -89,8 +89,8 @@ check_certs_expiration() {
 
 main() {
     SYSTEM=$(uname | tr '[:upper:]' '[:lower:]')
-    cacert_path="/etc/openvpn/ssl/ca/cacert.pem"
-    index_path="/etc/openvpn/ssl/ca/index.txt"
+    cacert_path="/etc/shellpki/cacert.pem"
+    index_path="/etc/shellpki/index.txt"
     somedays="3456000" # 40 days currently
     expired_certs=""
     expiring_soon_certs=""

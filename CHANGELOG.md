@@ -12,12 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-* cert-expirations.sh: check CARP state only when checking ca and certs expirations
-* Fix path variables in cert-expirations.sh
-
 ### Removed
 
 ### Security
+
+## [22.12] 2022-12-02
+
+### Fixed
+
+* cert-expirations.sh: check CARP state only when checking ca and certs expirations
+* Fix path variables in cert-expirations.sh
 
 ## [22.12] 2022-12-01
 

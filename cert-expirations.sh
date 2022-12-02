@@ -23,6 +23,16 @@ Usage: ${0} [--version]
 END
 }
 
+check_carp_state() {
+    if [ "${SYSTEM}" = "openbsd" ]; then
+        carp=$(/sbin/ifconfig carp0 2>/dev/null | grep 'status' | cut -d' ' -f2)
+
+        if [ "$carp" = "backup" ]; then
+            exit 0
+        fi
+    fi
+}
+
 check_ca_expiration() {
     echo "CA certificate:"
     openssl x509 -enddate -noout -in ${cacert_path} \
@@ -79,15 +89,6 @@ check_certs_expiration() {
 
 main() {
     SYSTEM=$(uname | tr '[:upper:]' '[:lower:]')
-    
-    if [ "${SYSTEM}" = "openbsd" ]; then
-        carp=$(/sbin/ifconfig carp0 2>/dev/null | grep 'status' | cut -d' ' -f2)
-    
-        if [ "$carp" = "backup" ]; then
-            exit 0
-        fi
-    fi
-    
     cacert_path="/etc/openvpn/ssl/ca/cacert.pem"
     index_path="/etc/openvpn/ssl/ca/index.txt"
     somedays="3456000" # 40 days currently
@@ -107,6 +108,7 @@ main() {
         ;;
 
         "")
+            check_carp_state
             echo "Warning : all times are in UTC !"
             echo ""
             check_ca_expiration

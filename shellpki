@@ -5,7 +5,7 @@
 
 set -u
 
-VERSION="22.12"
+VERSION="22.12.2"
 
 show_version() {
     cat <<END

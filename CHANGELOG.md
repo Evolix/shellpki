@@ -10,17 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Fixed
+
+### Removed
+
+### Security
+
+## [22.12.2] 2022-12-13
+
+### Changed
+
 * Defaults default_crl_days to 2 years instead of 1
 
 ### Fixed
 
 * Fix ${CRL} and ${CA_DIR} rights so that CRL file can be read by openvpn
 
-### Removed
-
-### Security
-
-## [22.12] 2022-12-02
+## [22.12.1] 2022-12-02
 
 ### Fixed
 

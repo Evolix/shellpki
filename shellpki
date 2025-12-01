@@ -80,7 +80,7 @@ Create a client certificate with key and CSR directly generated on server :
         -p, --password              prompt the user for a password to set on the client key
             --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
             --days                  specify how many days the certificate should be valid
-            --end-date              specify until which date the certificate should be valid, in "YYYY/MM/DD hh:mm:ss" format, UTC +0
+            --end-date              specify until which date the certificate should be valid, in ISO 8601 format "YYYY-MM-DDThh:mm:ss", UTC +0
             --non-interactive       do not prompt the user, and exit if an error occurs
                                     in non-interactive mode, you must pass CA_PASSWORD as environment variable to give the CA password
                                     in non-interactive mode, you must pass PASSWORD as environment variable or use --password-file to set as password on the client key
@@ -591,15 +591,15 @@ create() {
             cert_end_date=$(TZ=:Zulu date --date "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
             # shellcheck disable=SC2181
             if [ "$?" -ne 0 ]; then
-                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format: YYYY/MM/DD [hh[:mm[:ss]]]."
+                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format is ISO 8601: YYYY-MM-DD[Thh:mm[:ss]]."
             else
                 crt_expiration_arg="-enddate ${cert_end_date}"
             fi
         elif [ "${SYSTEM}" = "openbsd" ]; then
-            cert_end_date=$(TZ=:Zulu date -f "%C%y/%m/%d %H:%M:%S" -j "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
+            cert_end_date=$(TZ=:Zulu date -f "%C%y-%m-%dT%H:%M:%S" -j "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
             # shellcheck disable=SC2181
             if [ "$?" -ne 0 ]; then
-                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format: YYYY/MM/DD hh:mm:ss."
+                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format is ISO 8601: YYYY-MM-DDThh:mm:ss."
             else
                 crt_expiration_arg="-enddate ${cert_end_date}"
             fi

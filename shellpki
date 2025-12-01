@@ -79,6 +79,7 @@ Create a client certificate with key and CSR directly generated on server :
             --end-date              specify until which date the certificate should be valid, in "YYYY/MM/DD hh:mm:ss" format, UTC +0
             --non-interactive       do not prompt the user, and exit if an error occurs
             --replace-existing      if the certificate already exists, revoke it before creating a new one
+            --no-crl                used with --replace-existing, do not renew the CRL when revoking
 
 EOF
 }
@@ -90,6 +91,7 @@ Revoke a client certificate :
     ${0} revoke [options] <commonName>
 
     Options
+        --no-crl                    do not renew the CRL when revoking
         --non-interactive           do not prompt the user, and exit if an error occurs
 
 EOF
@@ -198,22 +200,28 @@ ask_user_password() {
 }
 replace_existing_or_abort() {
     cn=${1:?}
+    no_crl_argument=""
+    if [ "${no_crl}" -eq 1 ]; then
+        no_crl_argument="--no-crl"
+    else
+        no_crl_argument=""
+    fi
     if [ "${non_interactive}" -eq 1 ]; then
         if [ "${replace_existing}" -eq 1 ]; then
-            revoke --non-interactive "${cn}"
+            revoke --non-interactive "${no_crl_argument}" "${cn}"
         else
             error "${cn} already exists, use \`--replace-existing' to force"
         fi
     else
         if [ "${replace_existing}" -eq 1 ]; then
-            revoke "${cn}"
+            revoke "${no_crl_argument}" "${cn}"
         else
             printf "%s already exists, do you want to revoke and recreate it ? [y/N] " "${cn}"
             read -r REPLY
             resp=$(echo "${REPLY}" | tr 'Y' 'y')
 
             if [ "${resp}" = "y" ]; then
-                revoke "${cn}"
+                revoke "${no_crl_argument}" "${cn}"
             else
                 error "Aborted"
             fi
@@ -416,6 +424,7 @@ create() {
     ask_pass=0
     non_interactive=0
     replace_existing=0
+    no_crl=0
     days=""
     end_date=""
     days_set=0
@@ -528,6 +537,9 @@ create() {
                 ;;
             --replace-existing)
                 replace_existing=1
+                ;;
+            --no-crl)
+                no_crl=1
                 ;;
             --)
                 # End of all options.
@@ -839,12 +851,16 @@ EOF
 }
 
 revoke() {
+    no_crl=0
     non_interactive=0
 
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
     while :; do
         case ${1:-} in
+            --no-crl)
+                no_crl=1
+                ;;
             --non-interactive)
                 non_interactive=1
                 ;;
@@ -904,11 +920,13 @@ revoke() {
         rm "${crt_file}"
     fi
 
-    "${OPENSSL_BIN}" ca \
-        -config "${CONF_FILE}" \
-        -passin pass:"${CA_PASSWORD}" \
-        -gencrl \
-        -out "${CRL}"
+    if [ "${no_crl}" -eq 0 ]; then
+        "${OPENSSL_BIN}" ca \
+            -config "${CONF_FILE}" \
+            -passin pass:"${CA_PASSWORD}" \
+            -gencrl \
+            -out "${CRL}"
+    fi
 }
 
 list() {

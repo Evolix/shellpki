@@ -34,6 +34,9 @@ show_usage() {
 Usage: ${0} <subcommand> [options] [CommonName]
 Warning: [options] always must be before [CommonName] and after <subcommand>
 
+<subcommand> can be any of init, create, revoke, list, check, or ocsp.
+Use \`${0} <subcommand>' without option to show the help of the subcommand.
+
 EOF
 show_usage_init
 show_usage_create
@@ -61,6 +64,7 @@ Initialize PKI (create CA key and self-signed certificate) :
 
     Options
         --non-interactive           do not prompt the user, and exit if an error occurs
+                                    in non-interactive mode, you must pass CA_PASSWORD as environment variable to set the CA password
 
 EOF
 }
@@ -78,6 +82,8 @@ Create a client certificate with key and CSR directly generated on server :
             --days                  specify how many days the certificate should be valid
             --end-date              specify until which date the certificate should be valid, in "YYYY/MM/DD hh:mm:ss" format, UTC +0
             --non-interactive       do not prompt the user, and exit if an error occurs
+                                    in non-interactive mode, you must pass CA_PASSWORD as environment variable to give the CA password
+                                    in non-interactive mode, you must pass PASSWORD as environment variable or use --password-file to set as password on the client key
             --replace-existing      if the certificate already exists, revoke it before creating a new one
             --no-crl                used with --replace-existing, do not renew the CRL when revoking
 
@@ -93,6 +99,7 @@ Revoke a client certificate :
     Options
         --no-crl                    do not renew the CRL when revoking
         --non-interactive           do not prompt the user, and exit if an error occurs
+                                    in non-interactive mode, you must pass CA_PASSWORD as environment variable to give the CA password
 
 EOF
 }

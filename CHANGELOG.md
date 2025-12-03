@@ -8,7 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Add --no-crl to not renew the CRL when revoking a cert
+* Add crl to only renew the CRL
+
 ### Changed
+
+* Use ISO 8601 format for --end-date option
+* Improve help
 
 ### Fixed
 

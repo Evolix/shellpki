@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+### Security
+
+## [25.12] 2025-12-03
+
+### Added
+
 * Add --no-crl to not renew the CRL when revoking a cert
 * Add crl to only renew the CRL
 

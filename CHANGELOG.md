@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Do not put the variable $no_crl_argument in quotes
+
 ### Removed
 
 ### Security

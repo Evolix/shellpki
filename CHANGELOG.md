@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Set subjectAltName by default to the $CN value and optionally add more value
+
 ### Changed
 
 * Do not display certificates that expired more than 90 days ago

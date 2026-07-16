@@ -18,6 +18,7 @@ default_crl_days= 730
 default_md      = sha256
 preserve        = no
 policy          = policy_match
+copy_extensions = copy
 
 [ policy_match ]
 countryName             = supplied

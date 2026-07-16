@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # shellpki is a wrapper around OpenSSL to manage a small PKI
 #
@@ -78,6 +78,8 @@ Create a client certificate with key and CSR directly generated on server :
 
     Options
         -f, --file, --csr-file      create a client certificate from a CSR (doesn't need key)
+            --subject-alt-name      define subjectAltName to add to certificate, in addition to default subjectAltName on CN
+                                    multiple subjectAltName can be given separated by a comma : example1.foo.com,example2.foo.com
         -p, --password              prompt the user for a password to set on the client key
             --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
             --days                  specify how many days the certificate should be valid
@@ -449,6 +451,8 @@ create() {
     non_interactive=0
     replace_existing=0
     no_crl=0
+    subject_alt_name_set=0
+    subject_alt_name_multiple=""
     days=""
     end_date=""
     days_set=0
@@ -486,6 +490,25 @@ create() {
             --file=|--csr-file=)
                 # csr-file options, without value
                 error "Argument error: \`--csr-file' requires a value"
+                ;;
+            --subject-alt-name)
+                # subjectAltName option, with value separated by space
+                if [ -n "$2" ]; then
+                    subject_alt_name=${2}
+                    subject_alt_name_set=1
+                    shift
+                else
+                    error "Argument error: \`--subject-alt-name' requires a value"
+                fi
+                ;;
+            --subject-alt-name=?*)
+                # subjectAltName option, with value separated by =
+                subject_alt_name=${1#*=}
+                subject_alt_name_set=1
+                ;;
+            --subject-alt-name=)
+                # days options, without value
+                error "Argument error: \`--subject-alt-name' requires a value"
                 ;;
             -p|--password)
                 ask_pass=1
@@ -744,16 +767,33 @@ create() {
         elif [ -n "${PASSWORD:-}" ]; then
             pass_args="-passin pass:${PASSWORD}"
         fi
-        "${OPENSSL_BIN}" req \
-            -batch \
-            -new \
-            -key "${key_file}" \
-            -out "${csr_file}" \
-            ${pass_args} \
-            -config /dev/stdin <<EOF
+        if [ "${subject_alt_name_set}" -eq 1 ]; then
+            subject_alt_name_multiple=$(for i in ${subject_alt_name//,/ }; do echo "-addext \"subjectAltName=DNS:${i}\" \ "; done)
+            "${OPENSSL_BIN}" req \
+                -batch \
+                -new \
+                -key "${key_file}" \
+                -addext "subjectAltName=DNS:${cn}" \
+                "${subject_alt_name_multiple}"
+                -out "${csr_file}" \
+                ${pass_args} \
+                -config /dev/stdin <<EOF
 $(cat "${CONF_FILE}")
 commonName_default = ${cn}
 EOF
+        else
+            "${OPENSSL_BIN}" req \
+                -batch \
+                -new \
+                -key "${key_file}" \
+                -addext "subjectAltName=DNS:${cn}" \
+                -out "${csr_file}" \
+                ${pass_args} \
+                -config /dev/stdin <<EOF
+$(cat "${CONF_FILE}")
+commonName_default = ${cn}
+EOF
+        fi
         # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
             error "Error generating the CSR"

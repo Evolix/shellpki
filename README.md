@@ -13,14 +13,16 @@ be copied to [ansible-roles/openvpn](https://gitea.evolix.org/evolix/ansible-rol
 ### Debian
 
 ~~~
-useradd shellpki --system -M --home-dir /etc/shellpki --shell /usr/sbin/nologin
 mkdir /etc/shellpki
 install -m 0640 openssl.cnf /etc/shellpki/
 install -m 0750 shellpki /usr/local/sbin/shellpki
-chown -R shellpki: /etc/shellpki
 ~~~
 
+If users without root access need to be able to run shellpki :
+
 ~~~
+# groupadd shellpki
+# adduser <USER> shellpki
 # visudo -f /etc/sudoers.d/shellpki
 %shellpki ALL = (root) /usr/local/sbin/shellpki
 ~~~
@@ -28,14 +30,16 @@ chown -R shellpki: /etc/shellpki
 ### OpenBSD
 
 ~~~
-useradd -r 1..1000 -d /etc/shellpki -s /sbin/nologin _shellpki
 mkdir /etc/shellpki
 install -m 0640 openssl.cnf /etc/shellpki/
 install -m 0750 shellpki /usr/local/sbin/shellpki
-chown -R _shellpki:_shellpki /etc/shellpki
 ~~~
 
+If users without root access need to be able to run shellpki :
+
 ~~~
+# groupadd _shellpki
+# usermod -G _shellpki <USER>
 # visudo -f /etc/sudoers
 %_shellpki ALL = (root) /usr/local/sbin/shellpki
 ~~~

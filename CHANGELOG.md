@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+* PKI_USER is useless
+
 ### Security
 
 ## [25.12] 2025-12-03

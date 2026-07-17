@@ -5,7 +5,7 @@
 
 set -u
 
-VERSION="22.04"
+VERSION="25.12"
 
 show_version() {
     cat <<END
@@ -34,10 +34,14 @@ show_usage() {
 Usage: ${0} <subcommand> [options] [CommonName]
 Warning: [options] always must be before [CommonName] and after <subcommand>
 
+<subcommand> can be any of init, create, revoke, crl, list, check, or ocsp.
+Use \`${0} <subcommand>' without option to show the help of the subcommand.
+
 EOF
 show_usage_init
 show_usage_create
 show_usage_revoke
+show_usage_crl
 show_usage_list
 show_usage_check
 show_usage_ocsp
@@ -61,6 +65,7 @@ Initialize PKI (create CA key and self-signed certificate) :
 
     Options
         --non-interactive           do not prompt the user, and exit if an error occurs
+                                    in non-interactive mode, you must pass CA_PASSWORD as environment variable to set the CA password
 
 EOF
 }
@@ -76,9 +81,12 @@ Create a client certificate with key and CSR directly generated on server :
         -p, --password              prompt the user for a password to set on the client key
             --password-file         if provided with a path to a readable file, the first line is read and set as password on the client key
             --days                  specify how many days the certificate should be valid
-            --end-date              specify until which date the certificate should be valid, in "YYYY/MM/DD hh:mm:ss" format, UTC +0
+            --end-date              specify until which date the certificate should be valid, in ISO 8601 format "YYYY-MM-DDThh:mm:ss", UTC +0
             --non-interactive       do not prompt the user, and exit if an error occurs
+                                    in non-interactive mode, you must pass CA_PASSWORD as environment variable to give the CA password
+                                    in non-interactive mode, you must pass PASSWORD as environment variable or use --password-file to set as password on the client key
             --replace-existing      if the certificate already exists, revoke it before creating a new one
+            --no-crl                used with --replace-existing, do not renew the CRL when revoking
 
 EOF
 }
@@ -90,7 +98,22 @@ Revoke a client certificate :
     ${0} revoke [options] <commonName>
 
     Options
+        --no-crl                    do not renew the CRL when revoking
         --non-interactive           do not prompt the user, and exit if an error occurs
+                                    in non-interactive mode, you must pass CA_PASSWORD as environment variable to give the CA password
+
+EOF
+}
+
+show_usage_crl () {
+    cat <<EOF
+Renew the CRL :
+
+    ${0} crl [options]
+
+    Options
+        --non-interactive           do not prompt the user, and exit if an error occurs
+                                    in non-interactive mode, you must pass CA_PASSWORD as environment variable to set the CA password
 
 EOF
 }
@@ -137,14 +160,14 @@ warning() {
 }
 
 verify_ca_password() {
-    "${OPENSSL_BIN}" rsa \
+    "${OPENSSL_BIN}" pkey \
         -in "${CA_KEY}"    \
         -passin pass:"${CA_PASSWORD}" \
         >/dev/null 2>&1
 }
 get_real_path() {
     # --canonicalize is supported on Linux
-    # -f is supported on Linux and OpenBSD 
+    # -f is supported on Linux and OpenBSD
     readlink -f -- "${1}"
 }
 
@@ -198,22 +221,31 @@ ask_user_password() {
 }
 replace_existing_or_abort() {
     cn=${1:?}
+    no_crl_argument=""
+    if [ "${no_crl}" -eq 1 ]; then
+        no_crl_argument="--no-crl"
+    else
+        no_crl_argument=""
+    fi
     if [ "${non_interactive}" -eq 1 ]; then
         if [ "${replace_existing}" -eq 1 ]; then
-            revoke --non-interactive "${cn}"
+            # Do not put the variable $no_crl_argument in quotes : "revoke --non-interactive '' $cn" would be executed, which doesn't work
+            revoke --non-interactive ${no_crl_argument} "${cn}"
         else
             error "${cn} already exists, use \`--replace-existing' to force"
         fi
     else
         if [ "${replace_existing}" -eq 1 ]; then
-            revoke "${cn}"
+            # Do not put the variable $no_crl_argument in quotes : "revoke --non-interactive '' $cn" would be executed, which doesn't work
+            revoke ${no_crl_argument} "${cn}"
         else
             printf "%s already exists, do you want to revoke and recreate it ? [y/N] " "${cn}"
             read -r REPLY
             resp=$(echo "${REPLY}" | tr 'Y' 'y')
 
             if [ "${resp}" = "y" ]; then
-                revoke "${cn}"
+                # Do not put the variable $no_crl_argument in quotes : "revoke --non-interactive '' $cn" would be executed, which doesn't work
+                revoke ${no_crl_argument} "${cn}"
             else
                 error "Aborted"
             fi
@@ -224,9 +256,10 @@ replace_existing_or_abort() {
 init() {
     umask 0177
 
-    [ -d "${CA_DIR}" ] || mkdir -m 0750 "${CA_DIR}"
+    [ -d "${CA_DIR}" ] || mkdir -m 0751 "${CA_DIR}"
     [ -d "${CRT_DIR}" ] || mkdir -m 0750 "${CRT_DIR}"
     [ -f "${INDEX_FILE}" ] || touch "${INDEX_FILE}"
+    [ -f "${INDEX_FILE}.attr" ] || touch "${INDEX_FILE}.attr"
     [ -f "${CRL}" ] || touch "${CRL}"
     [ -f "${SERIAL}" ] || echo "01" > "${SERIAL}"
 
@@ -278,17 +311,18 @@ init() {
 
     passout_arg=""
     if [ -n "${CA_PASSWORD:-}" ]; then
-        passout_arg="-passout pass:${CA_PASSWORD}"
+        passout_arg="-pass pass:${CA_PASSWORD}"
     elif [ "${non_interactive}" -eq 1 ]; then
         error "In non-interactive mode, you must pass CA_PASSWORD as environment variable."
     fi
 
     if [ ! -f "${CA_KEY}" ]; then
-        "${OPENSSL_BIN}" genrsa \
+        "${OPENSSL_BIN}" genpkey \
+            -algorithm RSA \
             -out "${CA_KEY}" \
             ${passout_arg} \
             -aes256 \
-            "${CA_KEY_LENGTH}" \
+            -pkeyopt "rsa_keygen_bits:${CA_KEY_LENGTH}" \
             >/dev/null 2>&1
         # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
@@ -355,9 +389,10 @@ ocsp() {
     port=$(echo "${ocsp_uri}" | cut -d':' -f2)
 
     if [ ! -f "${OCSP_KEY}" ]; then
-        "${OPENSSL_BIN}" genrsa \
+        "${OPENSSL_BIN}" genpkey \
+            -algorithm RSA \
             -out "${OCSP_KEY}" \
-            "${KEY_LENGTH}" \
+            -pkeyopt "rsa_keygen_bits:${KEY_LENGTH}" \
             >/dev/null 2>&1
         # shellcheck disable=SC2181
         if [ "$?" -ne 0 ]; then
@@ -413,6 +448,7 @@ create() {
     ask_pass=0
     non_interactive=0
     replace_existing=0
+    no_crl=0
     days=""
     end_date=""
     days_set=0
@@ -526,6 +562,9 @@ create() {
             --replace-existing)
                 replace_existing=1
                 ;;
+            --no-crl)
+                no_crl=1
+                ;;
             --)
                 # End of all options.
                 shift
@@ -569,15 +608,15 @@ create() {
             cert_end_date=$(TZ=:Zulu date --date "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
             # shellcheck disable=SC2181
             if [ "$?" -ne 0 ]; then
-                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format: YYYY/MM/DD [hh[:mm[:ss]]]."
+                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format is ISO 8601: YYYY-MM-DD[Thh:mm[:ss]]."
             else
                 crt_expiration_arg="-enddate ${cert_end_date}"
             fi
         elif [ "${SYSTEM}" = "openbsd" ]; then
-            cert_end_date=$(TZ=:Zulu date -f "%C%y/%m/%d %H:%M:%S" -j "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
+            cert_end_date=$(TZ=:Zulu date -f "%C%y-%m-%dT%H:%M:%S" -j "${end_date}" +"%Y%m%d%H%M%SZ" 2> /dev/null)
             # shellcheck disable=SC2181
             if [ "$?" -ne 0 ]; then
-                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format: YYYY/MM/DD hh:mm:ss."
+                error "Invalid end date format: \`${end_date}' can't be parsed by date(1). Expected format is ISO 8601: YYYY-MM-DDThh:mm:ss."
             else
                 crt_expiration_arg="-enddate ${cert_end_date}"
             fi
@@ -680,17 +719,19 @@ create() {
         # generate private key
         pass_args=""
         if [ -n "${password_file:-}" ]; then
-            pass_args="-aes256 -passout file:${password_file}"
+            pass_args="-aes256 -pass file:${password_file}"
         elif [ -n "${PASSWORD:-}" ]; then
-            pass_args="-aes256 -passout pass:${PASSWORD}"
+            pass_args="-aes256 -pass pass:${PASSWORD}"
         fi
-        "${OPENSSL_BIN}" genrsa \
+        "${OPENSSL_BIN}" genpkey \
+            -algorithm RSA \
             -out "${key_file}" \
             ${pass_args} \
-            "${KEY_LENGTH}" \
+            -pkeyopt "rsa_keygen_bits:${KEY_LENGTH}" \
             >/dev/null 2>&1
         # shellcheck disable=SC2181
         if [ "$?" -eq 0 ]; then
+            chmod 600 "${key_file}"
             echo "The KEY file is available at \`${key_file}'"
         else
             error "Error generating the private key"
@@ -834,12 +875,16 @@ EOF
 }
 
 revoke() {
+    no_crl=0
     non_interactive=0
 
     # Parse options
     # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
     while :; do
         case ${1:-} in
+            --no-crl)
+                no_crl=1
+                ;;
             --non-interactive)
                 non_interactive=1
                 ;;
@@ -898,6 +943,42 @@ revoke() {
     if [ "$?" -eq 0 ]; then
         rm "${crt_file}"
     fi
+
+    if [ "${no_crl}" -eq 0 ]; then
+        crl
+    fi
+}
+
+crl() {
+    non_interactive=0
+
+    # Parse options
+    # based on https://gist.github.com/deshion/10d3cb5f88a21671e17a
+    while :; do
+        case ${1:-} in
+            --non-interactive)
+                non_interactive=1
+                ;;
+            --)
+                # End of all options.
+                shift
+                break
+                ;;
+            -?*)
+                # ignore unknown options
+                warning "Warning: unknown option (ignored): \`$1'"
+                ;;
+            *)
+                # Default case: If no more options then break out of the loop.
+                break
+                ;;
+        esac
+
+        shift
+    done
+
+    # ask for CA passphrase
+    ask_ca_password 0
 
     "${OPENSSL_BIN}" ca \
         -config "${CONF_FILE}" \
@@ -1070,6 +1151,11 @@ main() {
             revoke "$@"
         ;;
 
+        crl)
+            shift
+            crl "$@"
+        ;;
+
         list)
             shift
             list "$@"
@@ -1098,9 +1184,11 @@ main() {
 
     # fix right
     chown -R "${PKI_USER}":"${PKI_USER}" "${CA_DIR}"
-    chmod 750 "${CA_DIR}" "${CRT_DIR}" "${KEY_DIR}" "${CSR_DIR}" "${PKCS12_DIR}" "${OVPN_DIR}" "${TMP_DIR}"
-    chmod 600 "${INDEX_FILE}"* "${SERIAL}"* "${CA_KEY}" "${CRL}"
+    chmod 750 "${CRT_DIR}" "${KEY_DIR}" "${CSR_DIR}" "${PKCS12_DIR}" "${OVPN_DIR}" "${TMP_DIR}"
+    chmod 600 "${INDEX_FILE}"* "${SERIAL}"* "${CA_KEY}"
     chmod 640 "${CA_CERT}"
+    chmod 604 "${CRL}"
+    chmod 751 "${CA_DIR}"
 }
 
 main "$@"

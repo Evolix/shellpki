@@ -16,7 +16,7 @@ be copied to [ansible-roles/openvpn](https://gitea.evolix.org/evolix/ansible-rol
 useradd shellpki --system -M --home-dir /etc/shellpki --shell /usr/sbin/nologin
 mkdir /etc/shellpki
 install -m 0640 openssl.cnf /etc/shellpki/
-install -m 0755 shellpki /usr/local/sbin/shellpki
+install -m 0750 shellpki /usr/local/sbin/shellpki
 chown -R shellpki: /etc/shellpki
 ~~~
 
@@ -31,7 +31,7 @@ chown -R shellpki: /etc/shellpki
 useradd -r 1..1000 -d /etc/shellpki -s /sbin/nologin _shellpki
 mkdir /etc/shellpki
 install -m 0640 openssl.cnf /etc/shellpki/
-install -m 0755 shellpki /usr/local/sbin/shellpki
+install -m 0750 shellpki /usr/local/sbin/shellpki
 chown -R _shellpki:_shellpki /etc/shellpki
 ~~~
 

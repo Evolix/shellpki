@@ -10,11 +10,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Do not display certificates that expired more than 90 days ago
+
 ### Fixed
+
+* Do not put the variable $no_crl_argument in quotes
 
 ### Removed
 
 ### Security
+
+## [25.12] 2025-12-03
+
+### Added
+
+* Add --no-crl to not renew the CRL when revoking a cert
+* Add crl to only renew the CRL
+
+### Changed
+
+* Use ISO 8601 format for --end-date option
+* Improve help
+
+### Fixed
+
+* Fix mode of shellpki script in README file when installing it
+
+## [22.12.2] 2022-12-13
+
+### Changed
+
+* Defaults default_crl_days to 2 years instead of 1
+
+### Fixed
+
+* Fix ${CRL} and ${CA_DIR} rights so that CRL file can be read by openvpn
+
+## [22.12.1] 2022-12-02
+
+### Fixed
+
+* cert-expirations.sh: check CARP state only when checking ca and certs expirations
+* Fix path variables in cert-expirations.sh
+
+## [22.12] 2022-12-01
+
+### Added
+
+* The key file can be read and written only by the owner
+
+### Changed
+
+* Use genpkey and pkey instead of genrsa and rsa
+* Improved cert-expirations.sh for better readability of its ouput
+
+### Fixed
+
+* Create index.txt.attr file
 
 ## [22.04] 2022-04-14
 

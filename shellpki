@@ -507,7 +507,7 @@ create() {
                 subject_alt_name_set=1
                 ;;
             --subject-alt-name=)
-                # days options, without value
+                # subjectAltName options, without value
                 error "Argument error: \`--subject-alt-name' requires a value"
                 ;;
             -p|--password)

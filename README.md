@@ -13,10 +13,14 @@ be copied to [ansible-roles/openvpn](https://gitea.evolix.org/evolix/ansible-rol
 ### Debian
 
 ~~~
-mkdir /etc/shellpki
-install -m 0640 openssl.cnf /etc/shellpki/
-install -m 0750 shellpki /usr/local/sbin/shellpki
+# git clone …
+# cd shellpki
+# mkdir /etc/shellpki
+# install -m 0640 openssl.cnf /etc/shellpki/
+# install -m 0750 shellpki /usr/local/sbin/shellpki
 ~~~
+
+The other files in the repository can be deleted.
 
 If users without root access need to be able to run shellpki :
 
@@ -30,10 +34,14 @@ If users without root access need to be able to run shellpki :
 ### OpenBSD
 
 ~~~
-mkdir /etc/shellpki
-install -m 0640 openssl.cnf /etc/shellpki/
-install -m 0750 shellpki /usr/local/sbin/shellpki
+# git clone …
+# cd shellpki
+# mkdir /etc/shellpki
+# install -m 0640 openssl.cnf /etc/shellpki/
+# install -m 0750 shellpki /usr/local/sbin/shellpki
 ~~~
+
+The other files in the repository can be deleted.
 
 If users without root access need to be able to run shellpki :
 
@@ -73,7 +81,9 @@ cipher AES-256-GCM
 Usage: shellpki <subcommand> [options] [CommonName]
 ~~~
 
-Initialize PKI (create CA key and self-signed certificate) :
+### Initialize PKI (create CA key and self-signed certificate)
+
+This is the first needed operation to have a functional server.
 
 ~~~
 shellpki init [options] <commonName_for_CA>
@@ -82,7 +92,19 @@ Options
     --non-interactive           do not prompt the user, and exit if an error occurs
 ~~~
 
-Create a client certificate with key and CSR directly generated on server :
+Example :
+
+~~~
+# shellpki init myserver.example.com
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+Password for CA key: 
+Using configuration from /etc/shellpki/openssl.cnf
+~~~
+
+You have to give the password for the CA key 3 times. The first 2 ("PEM pass phrase") are prompted by openssl to generate the CA key, the third ("Password for CA key") is prompted by shellpki to use it to generate the CA certificate and the CRL.
+
+### Create a client certificate with key and CSR directly generated on server
 
 ~~~
 shellpki create [options] <commonName>
@@ -97,7 +119,15 @@ Options
         --replace-existing      if the certificate already exists, revoke it before creating a new one
 ~~~
 
-Revoke a client certificate :
+Example :
+
+~~~
+# shellpki create --days 3650 myserver.example.com
+Password for CA key: 
+[…]
+~~~
+
+### Revoke a client certificate
 
 ~~~
 shellpki revoke [options] <commonName>
@@ -106,7 +136,19 @@ Options
     --non-interactive           do not prompt the user, and exit if an error occurs
 ~~~
 
-List all certificates :
+Example :
+
+~~~
+# shellpki revoke myserver.example.com
+Password for CA key: 
+Revoke certificate /etc/shellpki/certs/myserver.example.com.crt :
+Using configuration from /etc/shellpki/openssl.cnf
+Revoking Certificate 01.
+Database updated
+Using configuration from /etc/shellpki/openssl.cnf
+~~~
+
+### List all certificates
 
 ~~~
 shellpki list <options>
@@ -117,25 +159,25 @@ Options
     -r, --revoked               list all revoked certificates
 ~~~
 
-Check expiration date of valid certificates :
+### Check expiration date of valid certificates
 
 ~~~
 shellpki check
 ~~~
 
-Run OCSP_D server :
+### Run OCSP_D server
 
 ~~~
 shellpki ocsp <ocsp_uri:ocsp_port>
 ~~~
 
-Show version :
+### Show version
 
 ~~~
 shellpki version
 ~~~
 
-Show help :
+### Show help
 
 ~~~
 shellpki help
